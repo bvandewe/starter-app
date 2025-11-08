@@ -13,6 +13,7 @@ repos:
           - id: check-yaml
             exclude: '^(deployment/helm/)'
           - id: check-json
+            exclude: '^\.vscode\.example/'
           - id: check-added-large-files
             args: ['--maxkb=1000']
           - id: check-merge-conflict
