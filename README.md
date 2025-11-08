@@ -190,9 +190,9 @@ The application includes test users with different roles:
 
 | Username | Password | Role | Access Level |
 |----------|----------|------|--------------|
-| admin | admin123 | admin | All tasks |
-| manager | manager123 | manager | Department tasks |
-| user | user123 | user | Only assigned tasks |
+| admin | test | admin | All tasks |
+| manager | test | manager | Department tasks |
+| user | test | user | Only assigned tasks |
 
 ## 🔐 Authentication & RBAC
 
