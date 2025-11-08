@@ -33,7 +33,7 @@ from domain.repositories import TaskRepository
 from infrastructure import InMemorySessionStore, RedisSessionStore, SessionStore
 from integration.repositories.motor_task_repository import MongoTaskRepository
 
-configure_logging(log_level="INFO")
+configure_logging(log_level=app_settings.log_level)
 log = logging.getLogger(__name__)
 
 

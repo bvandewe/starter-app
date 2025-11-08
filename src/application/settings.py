@@ -13,6 +13,7 @@ class Settings(ApplicationSettings):
     # Debugging Configuration
     debug: bool = True
     environment: str = "development"  # development, production
+    log_level: str = "INFO"
 
     # Application Configuration
     app_name: str = "Starter App"
