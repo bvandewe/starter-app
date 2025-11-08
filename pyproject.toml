@@ -14,6 +14,8 @@ itsdangerous = ">=2.2.0,<3.0.0"
 redis = ">=7.0.1,<8.0.0"
 motor = "^3.7.1"
 httpx = ">=0.24.0,<0.28.0"  # Added for JWKS fetching (RS256 verification)
+pre-commit = "^4.3.0"
+detect-secrets = "^1.5.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.0.0"
