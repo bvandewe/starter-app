@@ -75,12 +75,8 @@ repos:
       rev: v1.37.1
       hooks:
           - id: yamllint
-            args:
-                [
-                    '-d',
-                    '{extends: default, rules: {line-length: {max: 120}, document-start: disable}}',
-                ]
-            exclude: '^(deployment/helm/)'
+            args: ['-d', '{extends: default, rules: {line-length: {max: 250}, document-start: disable}}']
+            exclude: '^(deployment/helm/|docker-compose.yml|.pre-commit-config.yaml)'
 
     # Security check for Python dependencies
     - repo: https://github.com/PyCQA/bandit

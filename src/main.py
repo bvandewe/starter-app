@@ -2,8 +2,9 @@
 
 import logging
 from pathlib import Path
+from typing import Awaitable, Callable
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from neuroglia.data.infrastructure.mongo import MotorRepository
 from neuroglia.eventing.cloud_events.infrastructure.cloud_event_ingestor import (
@@ -20,6 +21,7 @@ from neuroglia.mapping import Mapper
 from neuroglia.mediation import Mediator
 from neuroglia.observability import Observability
 from neuroglia.serialization.json import JsonSerializer
+from starlette.responses import Response
 from starlette.routing import Mount
 
 from api.services import AuthService
@@ -105,6 +107,8 @@ def create_app() -> FastAPI:
         builder,
         [
             "domain.entities",
+            "domain.models",
+            "integration.models",
         ],
     )
     CloudEventPublisher.configure(builder)
@@ -197,7 +201,9 @@ def create_app() -> FastAPI:
     # Add middleware to inject AuthService into request state for FastAPI dependencies
     # Use the same instance that's registered in the DI container
     @app.middleware("http")
-    async def inject_auth_service(request, call_next):
+    async def inject_auth_service(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         """Middleware to inject AuthService into FastAPI request state.
 
         This middleware injects the AuthService instance into request state

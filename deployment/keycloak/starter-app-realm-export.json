@@ -156,17 +156,8 @@
             "publicClient": false,
             "secret": "starter-app-backend-secret-change-in-production",
             "protocol": "openid-connect",
-            "redirectUris": [
-                "http://localhost:8020/*",
-                "http://localhost:8024/*",
-                "http://localhost:1234/*",
-                "http://localhost:8020/api/docs/oauth2-redirect"
-            ],
-            "webOrigins": [
-                "http://localhost:8020",
-                "http://localhost:8024",
-                "http://localhost:1234"
-            ],
+            "redirectUris": ["http://localhost:8020/*", "http://localhost:8024/*", "http://localhost:1234/*", "http://localhost:8020/api/docs/oauth2-redirect"],
+            "webOrigins": ["http://localhost:8020", "http://localhost:8024", "http://localhost:1234"],
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": true,
             "serviceAccountsEnabled": false,
@@ -233,36 +224,20 @@
             "enabled": true,
             "publicClient": false,
             "secret": "partner-app-123",
-            "redirectUris": [
-                "http://localhost:8020/*",
-                "http://localhost:8024/*",
-                "http://localhost:1234/*"
-            ],
-            "webOrigins": [
-                "http://localhost:8020",
-                "http://localhost:8024",
-                "http://localhost:1234"
-            ],
+            "redirectUris": ["http://localhost:8020/*", "http://localhost:8024/*", "http://localhost:1234/*"],
+            "webOrigins": ["http://localhost:8020", "http://localhost:8024", "http://localhost:1234"],
             "standardFlowEnabled": true,
             "directAccessGrantsEnabled": true,
             "serviceAccountsEnabled": true
         },
         {
-            "clientId": "portal-web-app",
-            "name": "Portal Web Application",
+            "clientId": "starter-app-public",
+            "name": "Starter App Portal",
             "enabled": true,
             "publicClient": true,
             "protocol": "openid-connect",
-            "redirectUris": [
-                "http://localhost:8020/*",
-                "http://localhost:8024/*",
-                "http://localhost:1234/*"
-            ],
-            "webOrigins": [
-                "http://localhost:8020",
-                "http://localhost:8024",
-                "http://localhost:1234"
-            ],
+            "redirectUris": ["http://localhost:8020/*", "http://localhost:8024/*", "http://localhost:1234/*"],
+            "webOrigins": ["http://localhost:8020", "http://localhost:8024", "http://localhost:1234"],
             "standardFlowEnabled": true,
             "implicitFlowEnabled": false,
             "directAccessGrantsEnabled": true,

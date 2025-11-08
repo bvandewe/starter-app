@@ -20,7 +20,7 @@ The format follows the recommendations of Keep a Changelog (https://keepachangel
 
 ### Security
 
-- Placeholder.
+- Uvicorn now binds to `127.0.0.1` by default; override via `APP_HOST` when exposing the service deliberately.
 
 ---
 

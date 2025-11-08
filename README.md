@@ -221,6 +221,10 @@ else:
 Create a `.env` file (or use `.env.example`):
 
 ```bash
+# Application server
+APP_HOST=127.0.0.1         # Override only if you must expose the API externally
+APP_PORT=8080
+
 # Keycloak OAuth2/OIDC
 KEYCLOAK_SERVER_URL=http://keycloak:8080
 KEYCLOAK_REALM=starter-app

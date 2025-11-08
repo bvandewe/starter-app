@@ -45,3 +45,14 @@ The `Makefile` provides several commands to manage the application services.
 - **Keycloak Admin Console**: [http://localhost:8021](http://localhost:8021)
   - **Username**: `admin`
   - **Password**: `admin`
+
+## Server Binding Configuration
+
+For security, the Uvicorn server binds to `127.0.0.1` by default. If you need to expose the API outside of your machine, explicitly override the binding address:
+
+```bash
+export APP_HOST=0.0.0.0
+export APP_PORT=8080
+```
+
+Only use `0.0.0.0` when you understand the networking implications and have secured the environment.

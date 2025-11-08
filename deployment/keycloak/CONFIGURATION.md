@@ -11,7 +11,7 @@ If you're deploying fresh (without the `keycloak_data` volume), you'll need to d
 ```bash
 # After first startup, run this command once:
 docker compose exec keycloak /opt/keycloak/bin/kcadm.sh config credentials \
-    --server http://localhost:8080 \
+    --server http://localhost:8021 \
     --realm master \
     --user admin \
     --password admin
