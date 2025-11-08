@@ -6,12 +6,15 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from neuroglia.data.infrastructure.mongo import MotorRepository
-from neuroglia.eventing.cloud_events.infrastructure.cloud_event_ingestor import \
-    CloudEventIngestor
-from neuroglia.eventing.cloud_events.infrastructure.cloud_event_middleware import \
-    CloudEventMiddleware
-from neuroglia.eventing.cloud_events.infrastructure.cloud_event_publisher import \
-    CloudEventPublisher
+from neuroglia.eventing.cloud_events.infrastructure.cloud_event_ingestor import (
+    CloudEventIngestor,
+)
+from neuroglia.eventing.cloud_events.infrastructure.cloud_event_middleware import (
+    CloudEventMiddleware,
+)
+from neuroglia.eventing.cloud_events.infrastructure.cloud_event_publisher import (
+    CloudEventPublisher,
+)
 from neuroglia.hosting.web import SubAppConfig, WebApplicationBuilder
 from neuroglia.mapping import Mapper
 from neuroglia.mediation import Mediator
@@ -22,7 +25,7 @@ from starlette.routing import Mount
 from api.services import AuthService
 from api.services.openapi_config import configure_api_openapi
 from application.services import configure_logging
-from application.settings import Settings, app_settings
+from application.settings import app_settings
 from domain.entities import Task
 from domain.repositories import TaskRepository
 from infrastructure import InMemorySessionStore, RedisSessionStore, SessionStore
@@ -45,7 +48,7 @@ def create_session_store() -> SessionStore:
             store = RedisSessionStore(
                 redis_url=app_settings.redis_url,
                 session_timeout_hours=app_settings.session_timeout_hours,
-                key_prefix=app_settings.redis_key_prefix
+                key_prefix=app_settings.redis_key_prefix,
             )
             # Test connection
             if store.ping():
@@ -56,10 +59,14 @@ def create_session_store() -> SessionStore:
         except Exception as e:
             log.error(f"❌ Failed to connect to Redis: {e}")
             log.warning("⚠️ Falling back to InMemorySessionStore")
-            return InMemorySessionStore(session_timeout_hours=app_settings.session_timeout_hours)
+            return InMemorySessionStore(
+                session_timeout_hours=app_settings.session_timeout_hours
+            )
     else:
         log.info("💾 Using InMemorySessionStore (development only)")
-        return InMemorySessionStore(session_timeout_hours=app_settings.session_timeout_hours)
+        return InMemorySessionStore(
+            session_timeout_hours=app_settings.session_timeout_hours
+        )
 
 
 def create_app() -> FastAPI:
@@ -77,20 +84,31 @@ def create_app() -> FastAPI:
     builder = WebApplicationBuilder(app_settings=app_settings)
 
     # Configure core services
-    Mediator.configure(builder, [
-        "application.commands",
-        "application.queries"
-    ])
-    Mapper.configure(builder, [
-        "application.commands",
-        "application.queries",
-        "application.mapping",
-        "integration.models"
-    ])
-    JsonSerializer.configure(builder, [
-        "domain.entities",
-    ])
+    Mediator.configure(
+        builder,
+        [
+            "application.commands",
+            "application.queries",
+            "application.events.integration",
+        ],
+    )
+    Mapper.configure(
+        builder,
+        [
+            "application.commands",
+            "application.queries",
+            "application.mapping",
+            "integration.models",
+        ],
+    )
+    JsonSerializer.configure(
+        builder,
+        [
+            "domain.entities",
+        ],
+    )
     CloudEventPublisher.configure(builder)
+    CloudEventIngestor.configure(builder, ["application.events.integration"])
     Observability.configure(builder)
 
     # Configure MongoDB repository
@@ -99,7 +117,7 @@ def create_app() -> FastAPI:
         entity_type=Task,
         key_type=str,
         database_name="starter_app",
-        collection_name="tasks"
+        collection_name="tasks",
     )
 
     # Configure services
@@ -171,7 +189,9 @@ def create_app() -> FastAPI:
             # Normalize to leading slash, but treat root mount as empty prefix
             if mount_path and not mount_path.startswith("/"):
                 mount_path = f"/{mount_path}"
-            normalized_prefix = mount_path.rstrip("/") if mount_path not in ("", "/") else ""
+            normalized_prefix = (
+                mount_path.rstrip("/") if mount_path not in ("", "/") else ""
+            )
             route.app.state.openapi_path_prefix = normalized_prefix  # type: ignore[attr-defined]
 
     # Add middleware to inject AuthService into request state for FastAPI dependencies
@@ -209,10 +229,11 @@ def create_app() -> FastAPI:
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
         "main:create_app",
         factory=True,
-        host="0.0.0.0",
-        port=8080,
-        reload=True
+        host=app_settings.app_host,
+        port=app_settings.app_port,
+        reload=app_settings.debug,
     )

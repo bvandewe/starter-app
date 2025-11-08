@@ -1,4 +1,5 @@
 """Application settings configuration."""
+
 import logging
 import sys
 from typing import Optional
@@ -17,6 +18,10 @@ class Settings(ApplicationSettings):
     app_name: str = "Starter App"
     app_version: str = "1.0.0"
     app_url: str = "http://localhost:8020"  # External URL for callbacks
+    app_host: str = (
+        "127.0.0.1"  # Uvicorn bind address (override in production as needed)
+    )
+    app_port: int = 8080  # Uvicorn port
 
     # Observability Configuration
     service_name: str = "starter-app"
@@ -74,7 +79,9 @@ class Settings(ApplicationSettings):
     keycloak_client_secret: str = "starter-app-backend-secret-change-in-production"
 
     # Legacy public client (deprecated)
-    keycloak_public_client_id: str = "portal-web-app"  # Using existing client from realm config
+    keycloak_public_client_id: str = (
+        "portal-web-app"  # Using existing client from realm config
+    )
 
     # Legacy JWT (deprecated - will be removed)
     jwt_secret_key: str = "your-secret-key-change-in-production"
@@ -90,7 +97,9 @@ class Settings(ApplicationSettings):
 
     # Persistence Configuration
     consumer_group: Optional[str] = "starter-app-consumer-group"
-    connection_strings: dict[str, str] = {"mongo": "mongodb://root:pass@mongodb:27017/?authSource=admin"}
+    connection_strings: dict[str, str] = {
+        "mongo": "mongodb://root:pass@mongodb:27017/?authSource=admin"  # pragma: allowlist secret
+    }
 
     # Cloud Events Configuration
     cloud_event_sink: Optional[str] = None
@@ -119,7 +128,7 @@ def configure_logging(log_level: str = "INFO") -> None:
     logging.basicConfig(
         level=getattr(logging, log_level.upper(), logging.INFO),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[logging.StreamHandler(sys.stdout)]
+        handlers=[logging.StreamHandler(sys.stdout)],
     )
 
     # Set third-party loggers to WARNING to reduce noise
