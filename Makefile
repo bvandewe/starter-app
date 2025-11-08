@@ -199,6 +199,11 @@ format: ## Format code with black
 	@echo "$(BLUE)Formatting code...$(NC)"
 	poetry run black .
 
+install-hooks: ## Install pre-commit git hooks
+	@echo "$(BLUE)Installing pre-commit git hooks...$(NC)"
+	poetry run pre-commit install --install-hooks
+	@echo "$(GREEN)Git hooks installed successfully.$(NC)"
+
 ##@ Cleanup
 
 clean: ## Clean up generated files and caches
@@ -260,7 +265,7 @@ docs-config: ## Show current documentation configuration
 
 ##@ Environment Setup
 
-setup: install install-ui build-ui ## Complete setup for new developers
+setup: install install-ui build-ui install-hooks ## Complete setup for new developers
 	@echo "$(GREEN)✅ Setup complete!$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Quick Start:$(NC)"

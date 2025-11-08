@@ -28,7 +28,14 @@ Before you begin, ensure you have the following installed:
 
     This command will create a virtual environment and install all dependencies defined in `pyproject.toml`.
 
-3. **Install UI dependencies**:
+3. **Install pre-commit hooks**:
+    This project uses pre-commit hooks to enforce code quality. Install them by running:
+
+    ```bash
+    make install-hooks
+    ```
+
+4. **Install UI dependencies**:
     The frontend assets are built using Node.js.
 
     ```bash
