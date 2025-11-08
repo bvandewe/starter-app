@@ -1,6 +1,7 @@
 site_name: Starter App
 site_description: A comprehensive starter application with authentication, CQRS, and modern frontend
 site_url: https://bvandewe.github.io/starter-app/
+strict: false
 docs_dir: docs
 site_dir: site
 
