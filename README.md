@@ -48,13 +48,10 @@ starter-app/
 │   │       └── in_memory_task_repository.py
 │   ├── observability/               # Metrics, tracing, logging integration points
 │   │   └── metrics.py
-│   └── ui/                          # Frontend build + controller sub-app
-│       ├── controllers/             # UI route(s)
-│       ├── src/                     # Parcel source (scripts, styles)
-│       ├── build/                   # Generated assets (git-ignored, published to static)
-│       ├── build-template.js        # Parcel build script
-│       ├── package.json             # Frontend dependencies
-│       └── .parcel-cache/           # Parcel cache (excluded from rename)
+│   ├── ui/                          # Frontend build + controller sub-app
+│   │   ├── controllers/             # UI route(s)
+│   │   ├── src/                     # Parcel source (scripts, styles)
+│   │   ├── package.json             # Frontend dependencies
 ├── tests/                           # Pytest suites (unit/integration)
 │   ├── test_auth_service.py
 │   ├── test_session_store.py
@@ -93,7 +90,7 @@ make setup
 make run
 
 # Or run with Docker
-make docker-up
+make up
 
 # See all available commands
 make help
@@ -110,22 +107,14 @@ make help
 2. **Install frontend dependencies and build UI:**
 
    ```bash
-   cd ui
-   npm install
-   npm run build
-   cd ..
+   make install-ui
+   make build-ui
    ```
 
 3. **Run the application:**
 
    ```bash
-   poetry run python main.py
-   ```
-
-   Or with auto-reload:
-
-   ```bash
-   poetry run uvicorn main:create_app --factory --reload
+   make run
    ```
 
 4. **Access the application:**
@@ -138,11 +127,10 @@ For hot-reload during UI development:
 
 ```bash
 # Terminal 1: Watch and rebuild frontend assets
-cd ui
-npm run dev
+make dev-ui
 
 # Terminal 2: Start backend with hot-reload
-poetry run uvicorn main:create_app --factory --reload
+make run
 ```
 
 ### Docker Development
@@ -154,16 +142,16 @@ Run the complete stack with Docker Compose using the **Makefile** (recommended):
 cp .env.example .env
 
 # Build and start services
-make docker-up
+make up
 
 # View logs
-make docker-logs
+make logs
 
 # Stop services
-make docker-down
+make down
 
 # Rebuild from scratch
-make docker-rebuild
+make rebuild
 ```
 
 Or use docker-compose directly:
@@ -178,11 +166,13 @@ docker-compose up -d
 
 This will start:
 
-- ✅ Starter App App (http://localhost:8000)
-- ✅ MongoDB (localhost:27017)
-- ✅ Keycloak (http://localhost:8080)
+- ✅ Starter App App (http://localhost:8020)
+- ✅ MongoDB (localhost:8022) and Mongo Express (http://localhost:8023)
+- ✅ Keycloak (http://localhost:8021)
 - ✅ OpenTelemetry Collector
 - ✅ UI Builder (auto-rebuild)
+- ✅ Redis (localhost:6379)
+- ✅ Event Player (http://localhost:8024)
 
 ## 👥 Test Users
 
@@ -193,6 +183,8 @@ The application includes test users with different roles:
 | admin | test | admin | All tasks |
 | manager | test | manager | Department tasks |
 | user | test | user | Only assigned tasks |
+
+See [deployment/keycloak/starter-app-realm-export.json](./deployment/keycloak/starter-app-realm-export.json)
 
 ## 🔐 Authentication & RBAC
 
@@ -207,9 +199,9 @@ The application includes test users with different roles:
 
 Authorization happens in the **application layer** (handlers), not controllers:
 
-- **Admin**: Can view and manage all tasks
-- **Manager**: Can view tasks in their department
-- **User**: Can only view their assigned tasks
+- **Admin**: Can view and manage all tasks, can delete tasks
+- **Manager**: Can view tasks in their department (not implemented)
+- **User**: Can only view their assigned tasks (not implemented)
 
 Example RBAC logic in `GetTasksQueryHandler`:
 
@@ -287,7 +279,7 @@ The project includes VS Code settings for:
 
 ### API Documentation
 
-Once running, visit http://localhost:8000/api/docs for interactive API documentation.
+Once running, visit http://localhost:8020/api/docs for interactive API documentation.
 
 ### Project Documentation
 
@@ -298,12 +290,12 @@ Comprehensive documentation is available in the `docs/` directory and online:
 
 #### Documentation Topics
 
-- **[Authentication](docs/authentication/)** - Dual auth system (session + JWT), OAuth2/OIDC, RBAC
-- **[Architecture](docs/architecture/)** - CQRS pattern, dependency injection, design patterns
-- **[Frontend](docs/frontend/)** - Build process, Parcel bundler, UI architecture
-- **[Infrastructure](docs/infrastructure/)** - Docker environment, deployment, configuration
-- **[Development](docs/development/)** - Makefile reference, workflow, testing
-- **[Troubleshooting](docs/troubleshooting/)** - Common issues, known bugs, solutions
+- [**Getting Started**](https://bvandewe.github.io/starter-app/getting-started/installation/) - How to install and run the application.
+- [**Architecture**](https://bvandewe.github.io/starter-app/architecture/overview/) - CQRS pattern, dependency injection, design patterns
+- [**Authentication**](https://bvandewe.github.io/starter-app/authentication/) - Dual auth system (session + JWT), OAuth2/OIDC, RBAC
+- [**Development**](https://bvandewe.github.io/starter-app/development/makefile-reference/) - Makefile reference, workflow, testing
+- [**Deployment**](https://bvandewe.github.io/starter-app/deployment/docker-environment/) - Docker environment, deployment, configuration
+- [**Troubleshooting**](https://bvandewe.github.io/starter-app/troubleshooting/common-issues/) - Common issues, known bugs, solutions
 
 #### Documentation Commands
 
@@ -341,14 +333,14 @@ The project includes a comprehensive Makefile for easy development workflow mana
 
 ### Docker Commands
 
-- `make docker-build` - Build Docker image
-- `make docker-dev` - Build and start Docker services with logs
-- `make docker-rebuild` - Rebuild services from scratch (no cache)
-- `make docker-up` - Start services in background
-- `make docker-down` - Stop and remove services
-- `make docker-restart` - Restart all services
-- `make docker-logs` - Show logs from all services
-- `make docker-clean` - Stop services and remove volumes ⚠️
+- `make build` - Build Docker image
+- `make dev` - Build and start Docker services with logs
+- `make rebuild` - Rebuild services from scratch (no cache)
+- `make up` - Start services in background
+- `make down` - Stop and remove services
+- `make restart` - Restart all services
+- `make logs` - Show logs from all services
+- `make clean` - Stop services and remove volumes ⚠️
 
 ### Local Development Commands
 
@@ -426,7 +418,7 @@ Automated formatting, linting, and security checks run before you commit to keep
 
 ```bash
 poetry add --group dev pre-commit
-poetry run pre-commit install          # Install git hooks (pre-commit + pre-push)
+poetry run pre-commit install --install-hooks
 poetry run pre-commit run --all-files  # Run on entire repo once
 ```
 
