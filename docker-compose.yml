@@ -50,7 +50,7 @@ services:
             # Keycloak Configuration (Optional)
             KEYCLOAK_SERVER_URL: http://keycloak:8080
             KEYCLOAK_REALM: ${KEYCLOAK_REALM:-starter-app}
-            KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-portal-web-app}
+            KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-starter-app-public}
             KEYCLOAK_PORT: ${KEYCLOAK_PORT:-8021}
 
             # Redis Configuration (Session Storage)
@@ -60,6 +60,11 @@ services:
 
             # Application settings
             ENABLE_CORS: 'true'
+
+            # Event streaming
+            CLOUD_EVENT_SINK: http://event-player:8080/events/pub
+            CLOUD_EVENT_SOURCE: https://starter-app.io
+            CLOUD_EVENT_TYPE_PREFIX: io.starter-app
 
             # OpenTelemetry configuration - Metrics & Traces
             OTEL_SERVICE_NAME: starter-app

@@ -1,14 +1,17 @@
 """Session store for managing user authentication sessions."""
+
 import json
 import secrets
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Dict, Optional, cast
 
 try:
-    import redis
+    import redis  # type: ignore[import]
+
     REDIS_AVAILABLE = True
 except ImportError:
+    redis = None  # type: ignore[assignment]
     REDIS_AVAILABLE = False
 
 
@@ -82,10 +85,10 @@ class InMemorySessionStore(SessionStore):
         now = datetime.utcnow()
 
         self._sessions[session_id] = {
-            'tokens': tokens,
-            'user_info': user_info,
-            'created_at': now,
-            'expires_at': now + self._session_timeout
+            "tokens": tokens,
+            "user_info": user_info,
+            "created_at": now,
+            "expires_at": now + self._session_timeout,
         }
 
         return session_id
@@ -98,7 +101,7 @@ class InMemorySessionStore(SessionStore):
             return None
 
         # Check if session expired
-        if session['expires_at'] < datetime.utcnow():
+        if session["expires_at"] < datetime.utcnow():
             # Clean up expired session
             self.delete_session(session_id)
             return None
@@ -114,9 +117,12 @@ class InMemorySessionStore(SessionStore):
         session = self._sessions.get(session_id)
 
         if session:
-            session['tokens'] = new_tokens
+            existing_tokens = session.get("tokens", {})
+            merged_tokens = dict(existing_tokens)
+            merged_tokens.update(new_tokens)
+            session["tokens"] = merged_tokens
             # Extend expiration time
-            session['expires_at'] = datetime.utcnow() + self._session_timeout
+            session["expires_at"] = datetime.utcnow() + self._session_timeout
 
     def cleanup_expired_sessions(self) -> int:
         """Remove all expired sessions (optional maintenance method).
@@ -126,8 +132,9 @@ class InMemorySessionStore(SessionStore):
         """
         now = datetime.utcnow()
         expired = [
-            sid for sid, session in self._sessions.items()
-            if session['expires_at'] < now
+            sid
+            for sid, session in self._sessions.items()
+            if session["expires_at"] < now
         ]
 
         for sid in expired:
@@ -148,7 +155,7 @@ class RedisSessionStore(SessionStore):
         self,
         redis_url: str,
         session_timeout_hours: int = 8,
-        key_prefix: str = "session:"
+        key_prefix: str = "session:",
     ):
         """Initialize the Redis session store.
 
@@ -166,8 +173,10 @@ class RedisSessionStore(SessionStore):
                 "Install with: pip install redis"
             )
 
-        self._client = redis.from_url(redis_url, decode_responses=True)
-        self._session_timeout_seconds = int(timedelta(hours=session_timeout_hours).total_seconds())
+        self._client = redis.from_url(redis_url, decode_responses=True)  # type: ignore[union-attr]
+        self._session_timeout_seconds = int(
+            timedelta(hours=session_timeout_hours).total_seconds()
+        )
         self._key_prefix = key_prefix
 
     def _make_key(self, session_id: str) -> str:
@@ -180,19 +189,17 @@ class RedisSessionStore(SessionStore):
         now = datetime.utcnow()
 
         session_data = {
-            'tokens': tokens,
-            'user_info': user_info,
-            'created_at': now.isoformat(),
-            'expires_at': (now + timedelta(seconds=self._session_timeout_seconds)).isoformat()
+            "tokens": tokens,
+            "user_info": user_info,
+            "created_at": now.isoformat(),
+            "expires_at": (
+                now + timedelta(seconds=self._session_timeout_seconds)
+            ).isoformat(),
         }
 
         # Store session in Redis with automatic expiration
         key = self._make_key(session_id)
-        self._client.setex(
-            key,
-            self._session_timeout_seconds,
-            json.dumps(session_data)
-        )
+        self._client.setex(key, self._session_timeout_seconds, json.dumps(session_data))
 
         return session_id
 
@@ -204,11 +211,11 @@ class RedisSessionStore(SessionStore):
         if not data:
             return None
 
-        session = json.loads(data)
+        session = json.loads(cast(str, data))
 
         # Convert ISO format strings back to datetime objects
-        session['created_at'] = datetime.fromisoformat(session['created_at'])
-        session['expires_at'] = datetime.fromisoformat(session['expires_at'])
+        session["created_at"] = datetime.fromisoformat(session["created_at"])
+        session["expires_at"] = datetime.fromisoformat(session["expires_at"])
 
         return session
 
@@ -225,28 +232,26 @@ class RedisSessionStore(SessionStore):
         if not session:
             return
 
-        # Update tokens
-        session['tokens'] = new_tokens
+        existing_tokens = session.get("tokens", {})
+        merged_tokens = dict(existing_tokens)
+        merged_tokens.update(new_tokens)
+        session["tokens"] = merged_tokens
 
         # Extend expiration time
         now = datetime.utcnow()
-        session['expires_at'] = now + timedelta(seconds=self._session_timeout_seconds)
+        session["expires_at"] = now + timedelta(seconds=self._session_timeout_seconds)
 
         # Convert datetime objects to ISO format for JSON serialization
         session_data = {
-            'tokens': session['tokens'],
-            'user_info': session['user_info'],
-            'created_at': session['created_at'].isoformat(),
-            'expires_at': session['expires_at'].isoformat()
+            "tokens": session["tokens"],
+            "user_info": session["user_info"],
+            "created_at": session["created_at"].isoformat(),
+            "expires_at": session["expires_at"].isoformat(),
         }
 
         # Store updated session with renewed TTL
         key = self._make_key(session_id)
-        self._client.setex(
-            key,
-            self._session_timeout_seconds,
-            json.dumps(session_data)
-        )
+        self._client.setex(key, self._session_timeout_seconds, json.dumps(session_data))
 
     def ping(self) -> bool:
         """Check if Redis connection is healthy.
@@ -255,6 +260,7 @@ class RedisSessionStore(SessionStore):
             True if Redis is responding, False otherwise
         """
         try:
-            return self._client.ping()
+            result = self._client.ping()
+            return bool(result) if not isinstance(result, bool) else result
         except Exception:
             return False

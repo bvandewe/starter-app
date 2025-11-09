@@ -1,6 +1,6 @@
-from .demo_event_handlers import (
-    TestIntegrationEventHandler,
-    TestRequestedIntegrationEventV1,
-)
+"""Integration event package exports.
 
-__all__ = ["TestIntegrationEventHandler", "TestRequestedIntegrationEventV1"]
+Avoid eager imports here to reduce circular dependencies between commands and
+event handlers. Modules should import the concrete classes they need directly
+from their submodules (e.g. ``application.events.integration.task_events``).
+"""

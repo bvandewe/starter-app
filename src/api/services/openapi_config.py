@@ -1,8 +1,11 @@
 """OpenAPI/Swagger configuration service for API documentation."""
-from typing import Any, cast
+
+from typing import Any, Iterable, cast
 
 from fastapi import FastAPI
+from fastapi.dependencies.models import Dependant, SecurityRequirement
 from fastapi.openapi.utils import get_openapi
+from fastapi.routing import APIRoute
 
 from application.settings import Settings
 
@@ -18,13 +21,9 @@ def _resolve_mount_prefix(app: FastAPI) -> str:
 
 
 # Custom setup function for API sub-app OpenAPI configuration
-def configure_api_openapi(
-    app: FastAPI, settings: Settings
-) -> None:
+def configure_api_openapi(app: FastAPI, settings: Settings) -> None:
     """Configure OpenAPI security schemes for the API sub-app."""
-    OpenAPIConfigService.configure_security_schemes(
-        app, settings
-    )
+    OpenAPIConfigService.configure_security_schemes(app, settings)
     OpenAPIConfigService.configure_swagger_ui(app, settings)
 
 
@@ -62,6 +61,10 @@ class OpenAPIConfigService:
                 routes=app.routes,
             )
 
+            prefix = _resolve_mount_prefix(app)
+            if prefix:
+                openapi_schema["servers"] = [{"url": prefix}]
+
             # Add security scheme for OAuth2 Authorization Code Flow
             if "components" not in openapi_schema:
                 openapi_schema["components"] = {}
@@ -73,7 +76,7 @@ class OpenAPIConfigService:
                 "flows": {
                     "authorizationCode": {
                         "authorizationUrl": f"{settings.keycloak_url}/realms/{settings.keycloak_realm}/protocol/openid-connect/auth",
-                        "tokenUrl": f"{settings.keycloak_url_internal}/realms/{settings.keycloak_realm}/protocol/openid-connect/token",
+                        "tokenUrl": f"{settings.keycloak_url}/realms/{settings.keycloak_realm}/protocol/openid-connect/token",
                         "scopes": {
                             "openid": "OpenID Connect",
                             "profile": "User profile",
@@ -84,13 +87,104 @@ class OpenAPIConfigService:
                 },
             }
 
-            # Apply security scheme to all operations
-            openapi_schema["security"] = [{"oauth2": ["openid", "profile", "email", "roles"]}]
+            # Tracking the missing security metadata back to FastAPI’s dependency tree:
+            # the bearer scheme lives inside the nested dependant that get_current_user
+            # pulls in, so the APIRoute itself exposed none.
+
+            # Recursively walk every dependant tree and map FastAPI routes to their
+            # declared security requirements. This ensures Swagger only attaches Authorization
+            # headers when the underlying route actually depends on security schemes.
+            def _collect_security_requirements(
+                dependant: Dependant,
+            ) -> list[SecurityRequirement]:
+                stack: list[Dependant] = [dependant]
+                visited: set[int] = set()
+                collected: list[SecurityRequirement] = []
+                while stack:
+                    current = stack.pop()
+                    identifier = id(current)
+                    if identifier in visited:
+                        continue
+                    visited.add(identifier)
+                    current_requirements: Iterable[SecurityRequirement] = (
+                        getattr(current, "security_requirements", []) or []
+                    )
+                    collected.extend(current_requirements)
+                    stack.extend(getattr(current, "dependencies", []) or [])
+                return collected
+
+            def _resolve_scheme_name(security_scheme: Any) -> str | None:
+                name = getattr(security_scheme, "scheme_name", None)
+                if name:
+                    return cast(str, name)
+                model = getattr(security_scheme, "model", None)
+                model_name = getattr(model, "name", None)
+                if model_name:
+                    return cast(str, model_name)
+                return None
+
+            operations_security: dict[tuple[str, str], list[dict[str, list[str]]]] = {}
+            for route in app.routes:
+                if not isinstance(route, APIRoute):
+                    continue
+                dependant = getattr(route, "dependant", None)
+                if not isinstance(dependant, Dependant):
+                    continue
+                security_requirements = _collect_security_requirements(dependant)
+                if not security_requirements:
+                    continue
+
+                dedup: dict[tuple[str, tuple[str, ...]], dict[str, list[str]]] = {}
+                for requirement in security_requirements:
+                    security_scheme = getattr(requirement, "security_scheme", None)
+                    scheme_name = _resolve_scheme_name(security_scheme)
+                    scopes = list(getattr(requirement, "scopes", []) or [])
+                    if scheme_name:
+                        key = (scheme_name, tuple(scopes))
+                        if key not in dedup:
+                            dedup[key] = {scheme_name: scopes}
+                requirement_dicts = list(dedup.values())
+                if not requirement_dicts:
+                    continue
+                for method in route.methods or []:
+                    method_lower = method.lower()
+                    if method_lower in {"head", "options"}:
+                        continue
+                    operations_security[(route.path_format, method_lower)] = (
+                        requirement_dicts
+                    )
+
+            paths = openapi_schema.get("paths", {})
+            http_methods = {
+                "get",
+                "post",
+                "put",
+                "delete",
+                "patch",
+                "head",
+                "options",
+                "trace",
+            }
+            for route_path, path_item in paths.items():
+                if not isinstance(path_item, dict):
+                    continue
+                for method, operation in path_item.items():
+                    if method not in http_methods or not isinstance(operation, dict):
+                        continue
+                    security_entry = operations_security.get((route_path, method))
+                    if security_entry:
+                        operation["security"] = security_entry
+                    elif "security" in operation:
+                        operation.pop("security")
 
             # Set client_id in Swagger UI
             if "swagger-ui-parameters" not in openapi_schema:
                 openapi_schema["swagger-ui-parameters"] = {}
-            openapi_schema["swagger-ui-parameters"]["client_id"] = settings.keycloak_client_id
+            swagger_client_id = getattr(
+                settings, "keycloak_public_client_id", ""
+            ) or getattr(settings, "keycloak_client_id", "")
+            if swagger_client_id:
+                openapi_schema["swagger-ui-parameters"]["client_id"] = swagger_client_id
 
             app.openapi_schema = openapi_schema
             return app.openapi_schema
@@ -110,9 +204,9 @@ class OpenAPIConfigService:
         """
         # Override swagger_ui_init_oauth to provide client_id
         # Prefer public browser client if configured (avoids confidential secret exposure)
-        public_client_id = cast(str, getattr(settings, "KEYCLOAK_PUBLIC_CLIENT_ID", ""))
-        confidential_client_id = cast(str, getattr(settings, "KEYCLOAK_CLIENT_ID", ""))
-        client_secret = cast(str, getattr(settings, "KEYCLOAK_CLIENT_SECRET", ""))
+        public_client_id = cast(str, getattr(settings, "keycloak_public_client_id", ""))
+        confidential_client_id = cast(str, getattr(settings, "keycloak_client_id", ""))
+        client_secret = cast(str, getattr(settings, "keycloak_client_secret", ""))
 
         chosen_client_id = public_client_id or confidential_client_id
 

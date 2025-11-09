@@ -24,7 +24,7 @@ from neuroglia.serialization.json import JsonSerializer
 from starlette.responses import Response
 from starlette.routing import Mount
 
-from api.services import AuthService
+from api.services import DualAuthService
 from api.services.openapi_config import configure_api_openapi
 from application.services import configure_logging
 from application.settings import app_settings
@@ -81,7 +81,7 @@ def create_app() -> FastAPI:
     Returns:
         Configured FastAPI application with multiple mounted apps
     """
-    log.info("🚀 Creating Simple UI application...")
+    log.debug("🚀 Creating Starter App application...")
 
     builder = WebApplicationBuilder(app_settings=app_settings)
 
@@ -91,6 +91,7 @@ def create_app() -> FastAPI:
         [
             "application.commands",
             "application.queries",
+            "application.events.domain",
             "application.events.integration",
         ],
     )
@@ -136,14 +137,14 @@ def create_app() -> FastAPI:
 
     # Register API services
     # Create AuthService instance (will be shared by both DI and middleware)
-    auth_service_instance = AuthService(session_store)
+    auth_service_instance = DualAuthService(session_store)
     # Pre-warm JWKS cache (ignore failure silently; will retry on first token usage)
     try:
         auth_service_instance._fetch_jwks()
         log.info("🔐 JWKS cache pre-warmed")
     except Exception as e:
         log.debug(f"JWKS pre-warm skipped: {e}")
-    services.add_singleton(AuthService, singleton=auth_service_instance)
+    services.add_singleton(DualAuthService, singleton=auth_service_instance)
 
     # Add SubApp for API with controllers
     builder.add_sub_app(
@@ -155,8 +156,7 @@ def create_app() -> FastAPI:
             version=app_settings.app_version,
             controllers=["api.controllers"],
             custom_setup=lambda app, service_provider: configure_api_openapi(
-                app,
-                app_settings,
+                app, app_settings
             ),
             docs_url="/docs",
         )
@@ -196,6 +196,7 @@ def create_app() -> FastAPI:
             normalized_prefix = (
                 mount_path.rstrip("/") if mount_path not in ("", "/") else ""
             )
+            log.debug(f"Mounted sub-app '{route}' at '{normalized_prefix}'")
             route.app.state.openapi_path_prefix = normalized_prefix  # type: ignore[attr-defined]
 
     # Add middleware to inject AuthService into request state for FastAPI dependencies

@@ -1,4 +1,4 @@
-.PHONY: help build-ui dev-ui run test lint format clean install-dev-tools update-neuroglia-config
+.PHONY: help build-ui dev-ui run test lint format clean install-dev-tools update-neuroglia-config restart-service
 
 # Default target
 .DEFAULT_GOAL := help
@@ -100,6 +100,15 @@ restart: ## Restart all services
 	@echo "$(BLUE)Restarting Docker services...$(NC)"
 	$(COMPOSE) restart
 	@echo "$(GREEN)Services restarted!$(NC)"
+
+restart-service: ## Restart a single Docker service (usage: make restart-service SERVICE=service_name)
+	@if [ -z "$(SERVICE)" ]; then \
+		echo "$(RED)Please specify SERVICE=<service_name>$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)Restarting Docker service '$(SERVICE)'...$(NC)"
+	$(COMPOSE) up -d --force-recreate $(SERVICE)
+	@echo "$(GREEN)Service '$(SERVICE)' restarted with refreshed environment variables.$(NC)"
 
 dev: ## Build and start services with live logs
 	@echo "$(BLUE)Starting development environment...$(NC)"

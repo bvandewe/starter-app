@@ -27,8 +27,6 @@ starter-app/
 │   ├── main.py                      # FastAPI app factory entry point
 │   ├── api/                         # API sub-app (mounted at /api)
 │   │   ├── controllers/             # Route controllers
-│   │   │   ├── auth_controller.py
-│   │   │   └── tasks_controller.py
 │   │   ├── dependencies.py          # Shared dependency helpers (auth, user)
 │   │   └── services/                # API-specific service utilities (e.g. OpenAPI config)
 │   ├── application/                 # Application layer (CQRS, mapping, settings)
@@ -44,8 +42,8 @@ starter-app/
 │   ├── infrastructure/              # Technical adapters implementing ports
 │   │   └── session_store.py         # Session store implementations (in-memory/redis)
 │   ├── integration/                 # Concrete adapters / in-memory repos
+│   │   └── models/
 │   │   └── repositories/
-│   │       └── in_memory_task_repository.py
 │   ├── observability/               # Metrics, tracing, logging integration points
 │   │   └── metrics.py
 │   ├── ui/                          # Frontend build + controller sub-app
@@ -53,8 +51,6 @@ starter-app/
 │   │   ├── src/                     # Parcel source (scripts, styles)
 │   │   ├── package.json             # Frontend dependencies
 ├── tests/                           # Pytest suites (unit/integration)
-│   ├── test_auth_service.py
-│   ├── test_session_store.py
 │   └── test_rename_integrity.py     # Ensures no leftover starter branding post-rename
 ├── scripts/
 │   └── rename_project.py            # Automated project rebranding utility

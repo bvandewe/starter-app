@@ -1,5 +1,7 @@
 """Get tasks query with handler and role-based filtering."""
+
 from dataclasses import dataclass
+from typing import Any
 
 from neuroglia.core import OperationResult
 from neuroglia.mediation import Query, QueryHandler
@@ -8,19 +10,20 @@ from domain.repositories import TaskRepository
 
 
 @dataclass
-class GetTasksQuery(Query[OperationResult]):
+class GetTasksQuery(Query[OperationResult[list[Any]]]):
     """Query to retrieve tasks with role-based filtering."""
+
     user_info: dict
 
 
-class GetTasksQueryHandler(QueryHandler[GetTasksQuery, OperationResult]):
+class GetTasksQueryHandler(QueryHandler[GetTasksQuery, OperationResult[list[Any]]]):
     """Handle task retrieval with role-based filtering."""
 
     def __init__(self, task_repository: TaskRepository):
         super().__init__()
         self.task_repository = task_repository
 
-    async def handle_async(self, query: GetTasksQuery) -> OperationResult:
+    async def handle_async(self, query: GetTasksQuery) -> OperationResult[list[Any]]:
         """Handle get tasks query with RBAC logic."""
         user_roles = query.user_info.get("roles", [])
 
@@ -57,7 +60,7 @@ class GetTasksQueryHandler(QueryHandler[GetTasksQuery, OperationResult]):
                 "assignee_id": str(task.assignee_id) if task.assignee_id else None,
                 "department": task.department,
                 "created_at": task.created_at.isoformat(),
-                "updated_at": task.updated_at.isoformat()
+                "updated_at": task.updated_at.isoformat(),
             }
             for task in tasks
         ]

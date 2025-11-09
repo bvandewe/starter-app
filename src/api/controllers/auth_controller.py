@@ -1,6 +1,9 @@
 """Authentication API controller with OAuth2/OIDC flow."""
+
 import secrets
+from datetime import datetime
 from typing import Optional
+from urllib.parse import urlencode
 
 import jwt
 from classy_fastapi.decorators import get, post
@@ -13,6 +16,7 @@ from neuroglia.mediation import Mediator
 from neuroglia.mvc import ControllerBase
 
 from application.settings import app_settings
+from domain.events import UserLoggedInDomainEvent
 from infrastructure import SessionStore
 
 
@@ -28,7 +32,9 @@ class AuthController(ControllerBase):
     6. User accesses app with cookie automatically sent
     """
 
-    def __init__(self, service_provider: ServiceProviderBase, mapper: Mapper, mediator: Mediator):
+    def __init__(
+        self, service_provider: ServiceProviderBase, mapper: Mapper, mediator: Mediator
+    ):
         super().__init__(service_provider, mapper, mediator)
 
         # Initialize Keycloak client with CONFIDENTIAL backend client
@@ -37,7 +43,7 @@ class AuthController(ControllerBase):
             server_url=app_settings.keycloak_url_internal,
             client_id=app_settings.keycloak_client_id,
             realm_name=app_settings.keycloak_realm,
-            client_secret_key=app_settings.keycloak_client_secret
+            client_secret_key=app_settings.keycloak_client_secret,
         )
 
         # Get session store from DI container as Controllers cant define additional dependencies
@@ -61,17 +67,13 @@ class AuthController(ControllerBase):
         auth_url = self.keycloak.auth_url(
             redirect_uri=f"{app_settings.app_url}/api/auth/callback",
             scope="openid profile email roles",
-            state=state
+            state=state,
         )
 
         return RedirectResponse(url=auth_url)
 
     @get("/callback")
-    async def callback(
-        self,
-        code: str,
-        state: str
-    ):
+    async def callback(self, code: str, state: str):
         """Handle OAuth2 callback from Keycloak.
 
         Args:
@@ -86,11 +88,11 @@ class AuthController(ControllerBase):
             tokens = self.keycloak.token(
                 grant_type="authorization_code",
                 code=code,
-                redirect_uri=f"{app_settings.app_url}/api/auth/callback"
+                redirect_uri=f"{app_settings.app_url}/api/auth/callback",
             )
 
             # Get user information using access token
-            user_info = self.keycloak.userinfo(tokens['access_token'])
+            user_info = self.keycloak.userinfo(tokens["access_token"])
 
             # Extract roles from access token
             # Note: Keycloak includes roles in access token's realm_access claim,
@@ -98,21 +100,28 @@ class AuthController(ControllerBase):
             try:
                 # Decode access token to extract realm roles (already validated by Keycloak)
                 access_token_decoded = jwt.decode(
-                    tokens['access_token'],
-                    options={"verify_signature": False}
+                    tokens["access_token"], options={"verify_signature": False}
                 )
 
                 # Get realm roles from token
-                realm_roles = access_token_decoded.get('realm_access', {}).get('roles', [])
+                realm_roles = access_token_decoded.get("realm_access", {}).get(
+                    "roles", []
+                )
 
                 # Add roles to user_info if present in token
                 if realm_roles:
                     # Filter out default Keycloak roles (offline_access, uma_authorization)
                     user_roles = [
-                        role for role in realm_roles
-                        if role not in ['offline_access', 'uma_authorization', 'default-roles-starter-app']
+                        role
+                        for role in realm_roles
+                        if role
+                        not in [
+                            "offline_access",
+                            "uma_authorization",
+                            "default-roles-starter-app",
+                        ]
                     ]
-                    user_info['roles'] = user_roles
+                    user_info["roles"] = user_roles
 
             except Exception as e:
                 # Log error but continue - roles are optional for basic authentication
@@ -120,6 +129,20 @@ class AuthController(ControllerBase):
 
             # Create server-side session
             session_id = self.session_store.create_session(tokens, user_info)
+            aggregate_id = (
+                user_info.get("sub")
+                or user_info.get("user_id")
+                or user_info.get("preferred_username")
+                or session_id
+            )
+            if self.mediator:
+                await self.mediator.publish_async(
+                    UserLoggedInDomainEvent(
+                        aggregate_id=aggregate_id,
+                        username=user_info.get("preferred_username") or "unknown",
+                        login_at=datetime.now(),
+                    )
+                )
             # Create redirect response
             redirect = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -131,7 +154,7 @@ class AuthController(ControllerBase):
                 secure=app_settings.environment == "production",
                 samesite="lax",
                 max_age=app_settings.session_timeout_hours * 3600,
-                path="/"
+                path="/",
             )
 
             return redirect
@@ -140,8 +163,7 @@ class AuthController(ControllerBase):
             # Log error and redirect to login
             print(f"OAuth2 callback error: {e}")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication failed"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication failed"
             )
 
     @post("/refresh")
@@ -151,28 +173,42 @@ class AuthController(ControllerBase):
         Returns new access/id tokens and updates the session store.
         """
         if not session_id:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing session cookie")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing session cookie",
+            )
         session = self.session_store.get_session(session_id)
         if not session:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
-        refresh_token = session.get("tokens", {}).get("refresh_token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired session",
+            )
+        session_tokens = session.get("tokens", {})
+        refresh_token = session_tokens.get("refresh_token")
         if not refresh_token:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No refresh token available")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No refresh token available",
+            )
         try:
             new_tokens = self.keycloak.refresh_token(refresh_token)
         except Exception as e:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Refresh failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Refresh failed: {e}"
+            )
 
         if "refresh_token" not in new_tokens:
             new_tokens["refresh_token"] = refresh_token
+        if "id_token" not in new_tokens and session_tokens.get("id_token"):
+            new_tokens["id_token"] = session_tokens.get("id_token")
         self.session_store.refresh_session(session_id, new_tokens)
-        return {"access_token": new_tokens.get("access_token"), "id_token": new_tokens.get("id_token")}
+        return {
+            "access_token": new_tokens.get("access_token"),
+            "id_token": new_tokens.get("id_token"),
+        }
 
     @get("/logout")
-    async def logout(
-        self,
-        session_id: Optional[str] = Cookie(None)
-    ):
+    async def logout(self, session_id: Optional[str] = Cookie(None)):
         """Logout user - clear session and redirect to Keycloak logout.
 
         Args:
@@ -182,37 +218,43 @@ class AuthController(ControllerBase):
             Redirect to Keycloak logout endpoint
         """
         id_token = None
+        refresh_token = None
 
         # Get id_token from session if available
         if session_id:
             session = self.session_store.get_session(session_id)
             if session:
-                id_token = session.get('tokens', {}).get('id_token')
+                tokens = session.get("tokens", {})
+                id_token = tokens.get("id_token")
+                refresh_token = tokens.get("refresh_token")
             # Delete server-side session
             self.session_store.delete_session(session_id)
 
-        # Build Keycloak logout URL with post_logout_redirect_uri
-        # Using post_logout_redirect_uri (not redirect_uri) for logout endpoint
+        params = {
+            "post_logout_redirect_uri": f"{app_settings.app_url}/",
+            "client_id": app_settings.keycloak_client_id,
+        }
+        if id_token:
+            params["id_token_hint"] = id_token
+        elif refresh_token:
+            params["refresh_token"] = refresh_token
+
+        # Build Keycloak logout URL with encoded parameters
         logout_url = (
             f"{app_settings.keycloak_url}/realms/{app_settings.keycloak_realm}"
-            f"/protocol/openid-connect/logout?post_logout_redirect_uri={app_settings.app_url}/"
+            f"/protocol/openid-connect/logout?{urlencode(params)}"
         )
 
-        # Add id_token_hint if available for proper session termination
-        if id_token:
-            logout_url += f"&id_token_hint={id_token}"
-
         # Create redirect and clear cookie
-        redirect = RedirectResponse(url=logout_url, status_code=status.HTTP_303_SEE_OTHER)
+        redirect = RedirectResponse(
+            url=logout_url, status_code=status.HTTP_303_SEE_OTHER
+        )
         redirect.delete_cookie("session_id", path="/")
 
         return redirect
 
     @get("/user")
-    async def get_current_user(
-        self,
-        session_id: Optional[str] = Cookie(None)
-    ):
+    async def get_current_user(self, session_id: Optional[str] = Cookie(None)):
         """Get current authenticated user information.
 
         Args:
@@ -226,8 +268,7 @@ class AuthController(ControllerBase):
         """
         if not session_id:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
             )
 
         # Retrieve session
@@ -235,9 +276,8 @@ class AuthController(ControllerBase):
 
         if not session:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Session expired"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Session expired"
             )
 
         # Return user info (never expose tokens to browser)
-        return session['user_info']
+        return session["user_info"]

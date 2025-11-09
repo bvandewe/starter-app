@@ -17,7 +17,7 @@ def configure_logging(
     filename: str = DEFAULT_LOG_FILENAME,
     lib_list: typing.List = DEFAULT_LOG_LIBRARIES_LIST,
     lib_level: str = DEFAULT_LOG_LIBRARIES_LEVEL,
-):
+) -> None:
     """Configures the root logger with the given format and handler(s).
        Optionally, the log level for some libraries may be customized separately
        (which is interesting when setting a log level DEBUG on root but not wishing to see debugs for all libs).
@@ -59,13 +59,22 @@ def configure_logging(
         logging.getLogger(logger_name).setLevel(log_level)
 
 
-def _configure_console_based_logging(root_logger, log_level, formatter):
+def _configure_console_based_logging(
+    root_logger: logging.Logger,
+    log_level: str,
+    formatter: logging.Formatter,
+) -> None:
     console_handler = logging.StreamHandler()
     handler = _configure_handler(console_handler, log_level, formatter)
     root_logger.addHandler(handler)
 
 
-def _configure_file_based_logging(root_logger, log_level, formatter, filename):
+def _configure_file_based_logging(
+    root_logger: logging.Logger,
+    log_level: str,
+    formatter: logging.Formatter,
+    filename: str,
+) -> None:
     # Ensure the directory exists
     os.makedirs(os.path.dirname(filename), exist_ok=True)
 
@@ -79,7 +88,11 @@ def _configure_file_based_logging(root_logger, log_level, formatter, filename):
     root_logger.addHandler(handler)
 
 
-def _configure_handler(handler: logging.StreamHandler, log_level, formatter) -> logging.StreamHandler:
+def _configure_handler(
+    handler: logging.Handler,
+    log_level: str,
+    formatter: logging.Formatter,
+) -> logging.Handler:
     handler.setLevel(log_level)
     handler.setFormatter(formatter)
     return handler

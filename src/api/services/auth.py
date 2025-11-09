@@ -5,6 +5,7 @@ Enhancements:
 - Falls back to deprecated HS256 secret only if token header/algorithm indicates HS256.
 - Caches JWKS for configurable TTL to avoid frequent network calls.
 """
+
 import json
 import logging
 import time
@@ -12,13 +13,13 @@ from typing import Any, Optional
 
 import httpx
 import jwt
-from jwt import algorithms
+from jwt import PyJWTError, algorithms
 
 from application.settings import app_settings
 from infrastructure import SessionStore
 
 
-class AuthService:
+class DualAuthService:
     """Service for authentication operations supporting both session and JWT auth."""
 
     _log = logging.getLogger("AuthService")
@@ -45,7 +46,7 @@ class AuthService:
 
         session = self.session_store.get_session(session_id)
         if session:
-            return session.get('user_info')
+            return session.get("user_info")
 
         return None
 
@@ -56,12 +57,16 @@ class AuthService:
     def _jwks_url(self) -> str:
         """Construct JWKS endpoint URL for the configured realm (internal URL preferred)."""
         base = app_settings.keycloak_url_internal or app_settings.keycloak_url
-        return f"{base}/realms/{app_settings.keycloak_realm}/protocol/openid-connect/certs"
+        return (
+            f"{base}/realms/{app_settings.keycloak_realm}/protocol/openid-connect/certs"
+        )
 
     def _fetch_jwks(self) -> dict | None:
         """Fetch JWKS from Keycloak with basic caching."""
         now = time.time()
-        if self._jwks_cache and (now - self._jwks_cache.get("fetched_at", 0) < self._jwks_ttl_seconds):
+        if self._jwks_cache and (
+            now - self._jwks_cache.get("fetched_at", 0) < self._jwks_ttl_seconds
+        ):
             return self._jwks_cache
         try:
             with httpx.Client(timeout=5.0) as client:
@@ -90,7 +95,9 @@ class AuthService:
         alg = unverified_header.get("alg")
         if not kid or not alg:
             return None
-        if alg != "RS256":  # We only handle RS256 here; HS256 fallback handled elsewhere
+        if (
+            alg != "RS256"
+        ):  # We only handle RS256 here; HS256 fallback handled elsewhere
             return None
         jwks = self._fetch_jwks()
         if not jwks:
@@ -98,7 +105,9 @@ class AuthService:
         for key in jwks.get("keys", []):
             if key.get("kid") == kid:
                 try:
-                    return algorithms.RSAAlgorithm.from_jwk(json.dumps(key))  # returns key object
+                    return algorithms.RSAAlgorithm.from_jwk(
+                        json.dumps(key)
+                    )  # returns key object
                 except Exception:
                     return None
         return None
@@ -119,7 +128,9 @@ class AuthService:
         rs256_payload = None
         if public_key:
             try:
-                verify_aud = app_settings.verify_audience and bool(app_settings.expected_audience)
+                verify_aud = app_settings.verify_audience and bool(
+                    app_settings.expected_audience
+                )
                 options = {"verify_aud": verify_aud}
                 rs256_payload = jwt.decode(
                     token,
@@ -131,7 +142,9 @@ class AuthService:
                 if app_settings.verify_issuer and app_settings.expected_issuer:
                     iss = rs256_payload.get("iss")
                     if iss != app_settings.expected_issuer:
-                        self._log.info(f"Issuer mismatch: got '{iss}', expected '{app_settings.expected_issuer}'")
+                        self._log.info(
+                            f"Issuer mismatch: got '{iss}', expected '{app_settings.expected_issuer}'"
+                        )
                         rs256_payload = None
             except jwt.ExpiredSignatureError:
                 self._log.info("RS256 token expired")
@@ -179,7 +192,9 @@ class AuthService:
             "legacy": legacy,
         }
 
-    def authenticate(self, session_id: str | None = None, token: str | None = None) -> dict | None:
+    def authenticate(
+        self, session_id: str | None = None, token: str | None = None
+    ) -> dict | None:
         """Authenticate user via session or JWT token.
 
         Args:
@@ -200,15 +215,21 @@ class AuthService:
                 exp_near = False
                 if access_token:
                     try:
-                        unverified = jwt.decode(access_token, options={"verify_signature": False})
+                        unverified = jwt.decode(
+                            access_token, options={"verify_signature": False}
+                        )
                         exp = unverified.get("exp")
                         if isinstance(exp, int):
                             import time as _t
+
                             remaining = exp - int(_t.time())
-                            if remaining < app_settings.refresh_auto_leeway_seconds and refresh_token:
+                            if (
+                                remaining < app_settings.refresh_auto_leeway_seconds
+                                and refresh_token
+                            ):
                                 exp_near = True
-                    except Exception:
-                        pass
+                    except (PyJWTError, ValueError, TypeError):
+                        exp_near = False
                 if exp_near and refresh_token:
                     try:
                         # Perform refresh
@@ -223,16 +244,26 @@ class AuthService:
                                     "client_id": app_settings.keycloak_client_id,
                                     "client_secret": app_settings.keycloak_client_secret,
                                 },
-                                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                                headers={
+                                    "Content-Type": "application/x-www-form-urlencoded"
+                                },
                             )
                             if resp.status_code == 200:
                                 new_tokens = resp.json()
                                 if "refresh_token" not in new_tokens:
                                     new_tokens["refresh_token"] = refresh_token
-                                self.session_store.refresh_session(session_id, new_tokens)
+                                if "id_token" not in new_tokens and tokens.get(
+                                    "id_token"
+                                ):
+                                    new_tokens["id_token"] = tokens.get("id_token")
+                                self.session_store.refresh_session(
+                                    session_id, new_tokens
+                                )
                                 session = self.session_store.get_session(session_id)
                             else:
-                                self._log.info(f"Auto-refresh failed status={resp.status_code}")
+                                self._log.info(
+                                    f"Auto-refresh failed status={resp.status_code}"
+                                )
                     except Exception as e:
                         self._log.info(f"Auto-refresh error: {e}")
                 user = session.get("user_info") if session else None

@@ -8,20 +8,21 @@ Enhancements:
 - Explicit 401 feedback for expired bearer tokens (helps clients refresh/re-authorize).
 - Adds RFC6750-compliant `WWW-Authenticate` header with error details.
 """
+
 import time
 from typing import Optional
 
 import jwt
-from fastapi import Cookie, Depends, HTTPException, Request, status
+from fastapi import Cookie, Depends, HTTPException, Request, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from api.services import AuthService
+from api.services import DualAuthService
 
 # Optional bearer token (won't raise error if missing)
-security_optional = HTTPBearer(auto_error=False)
+security_optional = HTTPBearer(auto_error=False, scheme_name="oauth2")
 
 
-def get_auth_service(request: Request) -> AuthService:
+def get_auth_service(request: Request) -> DualAuthService:
     """Get AuthService from request state (injected by middleware).
 
     Args:
@@ -33,7 +34,7 @@ def get_auth_service(request: Request) -> AuthService:
     Raises:
         RuntimeError: If AuthService not found in request state
     """
-    auth_service = getattr(request.state, 'auth_service', None)
+    auth_service = getattr(request.state, "auth_service", None)
     if auth_service is None:
         raise RuntimeError(
             "AuthService not found in request state. "
@@ -45,7 +46,7 @@ def get_auth_service(request: Request) -> AuthService:
 async def get_current_user(
     request: Request,
     session_id: Optional[str] = Cookie(None),
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_optional)
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security_optional),
 ) -> dict:
     """Get current user from either session cookie OR JWT Bearer token.
 
@@ -70,6 +71,7 @@ async def get_current_user(
     token = credentials.credentials if credentials else None
 
     # Pre-check bearer token expiry to provide clearer error feedback (Swagger tokens are not auto-refreshed)
+    decode_failed = False
     if token:
         try:
             unverified = jwt.decode(token, options={"verify_signature": False})
@@ -80,13 +82,21 @@ async def get_current_user(
                     detail="Bearer token expired. Re-authorize to obtain a new access token.",
                     headers={
                         "WWW-Authenticate": 'Bearer error="invalid_token", error_description="The access token expired"'
-                    }
+                    },
                 )
         except HTTPException:
             raise  # re-raise our explicit expired error
-        except Exception:
-            # Ignore parsing issues; will fall back to generic auth failure later
-            pass
+        except (jwt.PyJWTError, ValueError, TypeError):
+            decode_failed = True
+
+    if decode_failed:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid bearer token format.",
+            headers={
+                "WWW-Authenticate": 'Bearer error="invalid_token", error_description="Malformed token"'
+            },
+        )
 
     # Authenticate via session or JWT (session auto-refresh logic handled in AuthService)
     user = auth_service.authenticate(session_id=session_id, token=token)
@@ -99,12 +109,12 @@ async def get_current_user(
                 detail="Invalid or expired bearer token.",
                 headers={
                     "WWW-Authenticate": 'Bearer error="invalid_token", error_description="Invalid or expired token"'
-                }
+                },
             )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated. Provide either session cookie or Bearer token.",
-            headers={"WWW-Authenticate": 'Bearer realm="starter-app"'}
+            headers={"WWW-Authenticate": 'Bearer realm="starter-app"'},
         )
 
     return user
@@ -124,12 +134,14 @@ def require_roles(*required_roles: str):
     Returns:
         FastAPI dependency function that checks roles
     """
+
     async def role_checker(user: dict = Depends(get_current_user)) -> dict:
         user_roles = user.get("roles", [])
         if not any(role in user_roles for role in required_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Requires one of roles: {', '.join(required_roles)}"
+                detail=f"Requires one of roles: {', '.join(required_roles)}",
             )
         return user
+
     return role_checker

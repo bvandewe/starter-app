@@ -8,11 +8,12 @@ The format follows the recommendations of Keep a Changelog (https://keepachangel
 
 ### Added
 
-- Placeholder for upcoming changes.
+- `.vscode/copilot-context.md` instructions to guide AI agents on backend, frontend, documentation, and git practices.
 
 ### Changed
 
-- Placeholder.
+- Disabled automatic YAML formatting in the workspace to respect yamllint comment-spacing requirements.
+- Increased the yamllint line-length limit to 250 characters to accommodate long Docker Compose entries.
 
 ### Fixed
 

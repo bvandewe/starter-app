@@ -1,13 +1,17 @@
 """Task entity for the domain layer."""
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import uuid4
 
 from neuroglia.data import Entity
+from neuroglia.mapping.mapper import map_to
 
-from domain.models import TaskPriority, TaskStatus
+from domain.enums import TaskPriority, TaskStatus
+from integration.models import TaskCreatedDto
 
 
+@map_to(TaskCreatedDto)
 @dataclass
 class Task(Entity[str]):
     """Task domain entity."""
