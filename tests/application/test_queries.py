@@ -6,8 +6,10 @@ from unittest.mock import MagicMock
 import pytest
 from neuroglia.core import OperationResult
 
-from application.queries.get_task_by_id_query import (GetTaskByIdQuery,
-                                                      GetTaskByIdQueryHandler)
+from application.queries.get_task_by_id_query import (
+    GetTaskByIdQuery,
+    GetTaskByIdQueryHandler,
+)
 from application.queries.get_tasks_query import GetTasksQuery, GetTasksQueryHandler
 from domain.entities import Task
 from domain.enums import TaskPriority, TaskStatus
@@ -211,7 +213,11 @@ class TestGetTaskByIdQuery(BaseTestCase):
 
         query: GetTaskByIdQuery = GetTaskByIdQuery(
             task_id=task_id,
-            user_info={"roles": ["manager"], "sub": "manager1", "department": department},
+            user_info={
+                "roles": ["manager"],
+                "sub": "manager1",
+                "department": department,
+            },
         )
 
         # Act

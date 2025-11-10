@@ -9,12 +9,18 @@ from neuroglia.eventing.cloud_events.infrastructure import CloudEventBus
 from neuroglia.mapping import Mapper
 from neuroglia.mediation import Mediator
 
-from application.commands.create_task_command import (CreateTaskCommand,
-                                                      CreateTaskCommandHandler)
-from application.commands.delete_task_command import (DeleteTaskCommand,
-                                                      DeleteTaskCommandHandler)
-from application.commands.update_task_command import (UpdateTaskCommand,
-                                                      UpdateTaskCommandHandler)
+from application.commands.create_task_command import (
+    CreateTaskCommand,
+    CreateTaskCommandHandler,
+)
+from application.commands.delete_task_command import (
+    DeleteTaskCommand,
+    DeleteTaskCommandHandler,
+)
+from application.commands.update_task_command import (
+    UpdateTaskCommand,
+    UpdateTaskCommandHandler,
+)
 from domain.entities import Task
 from domain.enums import TaskPriority, TaskStatus
 from tests.fixtures.factories import TaskFactory
@@ -234,7 +240,9 @@ class TestUpdateTaskCommand(BaseTestCase):
         mock_repository.get_by_id_async = self.create_async_mock(
             return_value=existing_task
         )
-        mock_repository.update_async = self.create_async_mock(return_value=existing_task)
+        mock_repository.update_async = self.create_async_mock(
+            return_value=existing_task
+        )
 
         command: UpdateTaskCommand = UpdateTaskCommand(
             task_id=task_id,
@@ -263,7 +271,9 @@ class TestUpdateTaskCommand(BaseTestCase):
         mock_repository.get_by_id_async = self.create_async_mock(
             return_value=existing_task
         )
-        mock_repository.update_async = self.create_async_mock(return_value=existing_task)
+        mock_repository.update_async = self.create_async_mock(
+            return_value=existing_task
+        )
 
         command: UpdateTaskCommand = UpdateTaskCommand(
             task_id=task_id,
@@ -340,7 +350,9 @@ class TestUpdateTaskCommand(BaseTestCase):
         mock_repository.get_by_id_async = self.create_async_mock(
             return_value=existing_task
         )
-        mock_repository.update_async = self.create_async_mock(return_value=existing_task)
+        mock_repository.update_async = self.create_async_mock(
+            return_value=existing_task
+        )
 
         command: UpdateTaskCommand = UpdateTaskCommand(
             task_id=task_id,
@@ -373,7 +385,9 @@ class TestUpdateTaskCommand(BaseTestCase):
         mock_repository.get_by_id_async = self.create_async_mock(
             return_value=existing_task
         )
-        mock_repository.update_async = self.create_async_mock(return_value=existing_task)
+        mock_repository.update_async = self.create_async_mock(
+            return_value=existing_task
+        )
 
         command: UpdateTaskCommand = UpdateTaskCommand(
             task_id=task_id,
@@ -435,7 +449,9 @@ class TestDeleteTaskCommand(BaseTestCase):
         """Test successfully deleting a task."""
         # Arrange
         task_id: str = "task123"
-        existing_task: Task = TaskFactory.create(task_id=task_id, title="Task to Delete")
+        existing_task: Task = TaskFactory.create(
+            task_id=task_id, title="Task to Delete"
+        )
         mock_repository.get_by_id_async = self.create_async_mock(
             return_value=existing_task
         )

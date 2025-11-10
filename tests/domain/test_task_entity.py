@@ -9,12 +9,15 @@ Tests the core domain logic including:
 
 from domain.entities import Task
 from domain.enums import TaskPriority, TaskStatus
-from domain.events.task import (TaskAssigneeUpdatedDomainEvent, TaskCreatedDomainEvent,
-                                TaskDepartmentUpdatedDomainEvent,
-                                TaskDescriptionUpdatedDomainEvent,
-                                TaskPriorityUpdatedDomainEvent,
-                                TaskStatusUpdatedDomainEvent,
-                                TaskTitleUpdatedDomainEvent)
+from domain.events.task import (
+    TaskAssigneeUpdatedDomainEvent,
+    TaskCreatedDomainEvent,
+    TaskDepartmentUpdatedDomainEvent,
+    TaskDescriptionUpdatedDomainEvent,
+    TaskPriorityUpdatedDomainEvent,
+    TaskStatusUpdatedDomainEvent,
+    TaskTitleUpdatedDomainEvent,
+)
 from tests.fixtures.factories import TaskFactory
 
 
@@ -209,7 +212,9 @@ class TestTaskFactory:
 
     def test_create_task_with_factory(self) -> None:
         """Test creating task using TaskFactory."""
-        task: Task = TaskFactory.create(title="Factory Task", priority=TaskPriority.HIGH)
+        task: Task = TaskFactory.create(
+            title="Factory Task", priority=TaskPriority.HIGH
+        )
 
         assert task.state.title == "Factory Task"
         assert task.state.priority == TaskPriority.HIGH

@@ -48,3 +48,7 @@ line-length = 120
 python_version = "3.11"
 strict = true
 ignore_missing_imports = true
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "venv", "build", "dist"]
+skips = ["B101"]  # Skip assert_used check (assert is expected in tests)

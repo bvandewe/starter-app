@@ -7,7 +7,7 @@ import sys
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
-from infrastructure import InMemorySessionStore, RedisSessionStore
+from infrastructure import InMemorySessionStore, RedisSessionStore  # noqa: E402
 
 
 def test_in_memory_store():
@@ -20,13 +20,9 @@ def test_in_memory_store():
     tokens = {
         "access_token": "test_access_token",
         "refresh_token": "test_refresh_token",
-        "id_token": "test_id_token"
+        "id_token": "test_id_token",
     }
-    user_info = {
-        "sub": "test_user",
-        "email": "test@example.com",
-        "name": "Test User"
-    }
+    user_info = {"sub": "test_user", "email": "test@example.com", "name": "Test User"}
 
     session_id = store.create_session(tokens, user_info)
     print(f"✅ Created session: {session_id[:16]}...")
@@ -34,15 +30,15 @@ def test_in_memory_store():
     # Get session
     session = store.get_session(session_id)
     assert session is not None, "Session should exist"
-    assert session['tokens']['access_token'] == "test_access_token"
-    assert session['user_info']['email'] == "test@example.com"
+    assert session["tokens"]["access_token"] == "test_access_token"
+    assert session["user_info"]["email"] == "test@example.com"
     print("✅ Retrieved session successfully")
 
     # Refresh session
     new_tokens = {**tokens, "access_token": "new_access_token"}
     store.refresh_session(session_id, new_tokens)
     session = store.get_session(session_id)
-    assert session['tokens']['access_token'] == "new_access_token"
+    assert session["tokens"]["access_token"] == "new_access_token"
     print("✅ Refreshed session successfully")
 
     # Delete session
@@ -62,7 +58,7 @@ def test_redis_store():
         store = RedisSessionStore(
             redis_url="redis://localhost:6379/0",
             session_timeout_hours=1,
-            key_prefix="test_session:"
+            key_prefix="test_session:",
         )
 
         # Test connection
@@ -76,12 +72,12 @@ def test_redis_store():
         tokens = {
             "access_token": "test_access_token",
             "refresh_token": "test_refresh_token",
-            "id_token": "test_id_token"
+            "id_token": "test_id_token",
         }
         user_info = {
             "sub": "test_user",
             "email": "test@example.com",
-            "name": "Test User"
+            "name": "Test User",
         }
 
         session_id = store.create_session(tokens, user_info)
@@ -90,15 +86,15 @@ def test_redis_store():
         # Get session
         session = store.get_session(session_id)
         assert session is not None, "Session should exist"
-        assert session['tokens']['access_token'] == "test_access_token"
-        assert session['user_info']['email'] == "test@example.com"
+        assert session["tokens"]["access_token"] == "test_access_token"
+        assert session["user_info"]["email"] == "test@example.com"
         print("✅ Retrieved session successfully")
 
         # Refresh session
         new_tokens = {**tokens, "access_token": "new_access_token"}
         store.refresh_session(session_id, new_tokens)
         session = store.get_session(session_id)
-        assert session['tokens']['access_token'] == "new_access_token"
+        assert session["tokens"]["access_token"] == "new_access_token"
         print("✅ Refreshed session successfully")
 
         # Delete session

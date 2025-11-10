@@ -59,9 +59,7 @@ class AssertionMixin:
     """Mixin providing custom assertion helpers."""
 
     @staticmethod
-    def assert_task_equals(
-        actual: Task, expected: Task, check_id: bool = True
-    ) -> None:
+    def assert_task_equals(actual: Task, expected: Task, check_id: bool = True) -> None:
         """Assert two tasks are equal, with optional ID check."""
         if check_id:
             assert actual.state.id == expected.state.id, "Task IDs don't match"
@@ -69,9 +67,7 @@ class AssertionMixin:
         assert (
             actual.state.description == expected.state.description
         ), "Task descriptions don't match"
-        assert (
-            actual.state.status == expected.state.status
-        ), "Task statuses don't match"
+        assert actual.state.status == expected.state.status, "Task statuses don't match"
         assert (
             actual.state.priority == expected.state.priority
         ), "Task priorities don't match"
@@ -93,9 +89,7 @@ class AssertionMixin:
         )
 
     @staticmethod
-    def assert_dict_contains(
-        actual: dict[str, Any], expected: dict[str, Any]
-    ) -> None:
+    def assert_dict_contains(actual: dict[str, Any], expected: dict[str, Any]) -> None:
         """Assert actual dict contains all key-value pairs from expected dict."""
         for key, value in expected.items():
             assert key in actual, f"Key '{key}' not found in actual dict"
@@ -138,9 +132,7 @@ class MockHelperMixin:
             dict(mock.call_args.kwargs) if mock.call_args else {}
         )
         for key, value in expected_kwargs.items():
-            assert (
-                key in call_kwargs
-            ), f"Expected kwarg '{key}' not found in call args"
+            assert key in call_kwargs, f"Expected kwarg '{key}' not found in call args"
             actual_value: Any = call_kwargs[key]
             assert (
                 actual_value == value
