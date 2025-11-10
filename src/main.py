@@ -123,17 +123,13 @@ def create_app() -> FastAPI:
         key_type=str,
         database_name="starter_app",
         collection_name="tasks",
+        domain_repository_type=TaskRepository,
+        implementation_type=MongoTaskRepository,
     )
-
-    # Configure services
-    services = builder.services
-
-    # Register repositories - MongoTaskRepository with dependency injection
-    services.add_scoped(TaskRepository, MongoTaskRepository)
 
     # Register infrastructure services - use factory to create appropriate session store
     session_store = create_session_store()
-    services.add_singleton(SessionStore, singleton=session_store)
+    builder.services.add_singleton(SessionStore, singleton=session_store)
 
     # Register API services
     # Create AuthService instance (will be shared by both DI and middleware)
@@ -144,7 +140,7 @@ def create_app() -> FastAPI:
         log.info("🔐 JWKS cache pre-warmed")
     except Exception as e:
         log.debug(f"JWKS pre-warm skipped: {e}")
-    services.add_singleton(DualAuthService, singleton=auth_service_instance)
+    builder.services.add_singleton(DualAuthService, singleton=auth_service_instance)
 
     # Add SubApp for API with controllers
     builder.add_sub_app(

@@ -380,6 +380,6 @@ npm run build-template
 
 ## Related Documentation
 
-- [Frontend Architecture](./frontend-architecture.md) - JavaScript module structure
 - [Docker Environment](../infrastructure/docker-environment.md) - UI builder service
-- [Development Workflow](../development/workflow.md) - Daily development process
+- [Makefile Reference](../development/makefile-reference.md) - Build commands
+- [Getting Started](../getting-started/installation.md) - Setup guide

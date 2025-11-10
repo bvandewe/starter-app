@@ -117,7 +117,7 @@ dev: ## Build and start services with live logs
 rebuild: ## Rebuild services from scratch without cache
 	@echo "$(BLUE)Rebuilding services from scratch...$(NC)"
 	$(COMPOSE) build --no-cache
-	$(COMPOSE) up -d --force-create
+	$(COMPOSE) up -d --force-recreate
 	@echo "$(GREEN)Rebuild complete!$(NC)"
 
 logs: ## Show logs from all services
@@ -129,7 +129,7 @@ logs-app: ## Show logs from the app service only
 ps: ## Show running containers
 	$(COMPOSE) ps
 
-clean: ## Stop services and remove all volumes (WARNING: removes all data)
+docker-clean: ## Stop services and remove all volumes (WARNING: removes all data)
 	@echo "$(RED)WARNING: This will remove all containers, volumes, and data!$(NC)"
 	@read -p "Are you sure? [y/N] " -n 1 -r; \
 	echo; \
@@ -195,6 +195,26 @@ run-debug: build-ui ## Run with debug logging
 test: ## Run tests
 	@echo "$(BLUE)Running tests...$(NC)"
 	poetry run pytest
+
+test-unit: ## Run unit tests
+	@echo "$(BLUE)Running unit tests...$(NC)"
+	poetry run pytest -m unit
+
+test-domain: ## Run domain tests
+	@echo "$(BLUE)Running domain tests...$(NC)"
+	poetry run pytest tests/domain/ -v
+
+test-command: ## Run command tests
+	@echo "$(BLUE)Running command tests...$(NC)"
+	poetry run pytest -m command
+
+test-query: ## Run query tests
+	@echo "$(BLUE)Running query tests...$(NC)"
+	poetry run pytest -m query
+
+test-application: ## Run application tests
+	@echo "$(BLUE)Running application tests...$(NC)"
+	poetry run pytest tests/application -v
 
 test-cov: ## Run tests with coverage
 	@echo "$(BLUE)Running tests with coverage...$(NC)"

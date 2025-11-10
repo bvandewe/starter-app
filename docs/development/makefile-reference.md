@@ -1,13 +1,13 @@
 # Makefile Quick Reference
 
-This document provides a quick reference for all available `make` commands in the System Designer project.
+This document provides a quick reference for all available `make` commands in the Starter App project.
 
 ## 🚀 Quick Start Commands
 
 ```bash
-make setup        # Complete setup (install dependencies + build UI)
+make setup        # Complete setup (install dependencies + build UI + hooks)
 make run          # Run application locally
-make docker-up    # Run with Docker
+make up           # Run with Docker
 make help         # Show all commands
 ```
 
@@ -21,16 +21,20 @@ make help         # Show all commands
 
 | Command | Description |
 |---------|-------------|
-| `make docker-build` | Build Docker image |
-| `make docker-dev` | Build and start Docker services (with logs) |
-| `make docker-rebuild` | Rebuild services from scratch (no cache) |
-| `make docker-up` | Start services in background |
-| `make docker-down` | Stop and remove services |
-| `make docker-restart` | Restart all services |
-| `make docker-logs` | Show logs from all services |
-| `make docker-logs-app` | Show logs from app service only |
-| `make docker-ps` | Show running containers |
+| `make build` | Build Docker images for all services |
+| `make up` | Start services in background |
+| `make down` | Stop and remove services |
+| `make start` | Start existing containers |
+| `make stop` | Stop running containers |
+| `make restart` | Restart all services |
+| `make restart-service SERVICE=<name>` | Restart a single Docker service |
+| `make dev` | Build and start services with live logs |
+| `make rebuild` | Rebuild services from scratch (no cache) |
+| `make logs` | Show logs from all services |
+| `make logs-app` | Show logs from app service only |
+| `make ps` | Show running containers |
 | `make docker-clean` | ⚠️ Stop services and remove volumes (deletes data!) |
+| `make urls` | Display application and service URLs |
 
 ### Local Development
 
@@ -47,10 +51,16 @@ make help         # Show all commands
 
 | Command | Description |
 |---------|-------------|
-| `make test` | Run tests |
-| `make test-cov` | Run tests with coverage report |
-| `make lint` | Run linting checks |
+| `make test` | Run all tests |
+| `make test-unit` | Run unit tests only |
+| `make test-domain` | Run domain layer tests |
+| `make test-command` | Run command tests |
+| `make test-query` | Run query tests |
+| `make test-application` | Run application layer tests |
+| `make test-cov` | Run tests with coverage report (HTML + terminal) |
+| `make lint` | Run linting checks with Ruff |
 | `make format` | Format code with Black |
+| `make install-hooks` | Install pre-commit git hooks |
 
 ### Cleanup
 
@@ -58,6 +68,18 @@ make help         # Show all commands
 |---------|-------------|
 | `make clean` | Clean up generated files and caches |
 | `make clean-all` | Clean everything including Docker volumes |
+
+### Documentation
+
+| Command | Description |
+|---------|-------------|
+| `make docs-install` | Install MkDocs and dependencies |
+| `make docs-update-config` | Update mkdocs.yml from .env variables |
+| `make docs-serve` | Serve documentation locally with live reload |
+| `make docs-build` | Build documentation site |
+| `make docs-deploy` | Deploy documentation to GitHub Pages |
+| `make docs-clean` | Clean documentation build artifacts |
+| `make docs-config` | Show current documentation configuration |
 
 ### Environment Setup
 
@@ -80,7 +102,7 @@ make help         # Show all commands
 ```bash
 # Clone the repository (if needed)
 git clone <repository-url>
-cd system-designer
+cd starter-app
 
 # Check environment
 make env-check
@@ -106,13 +128,31 @@ make run
 
 ```bash
 # Start all services
-make docker-up
+make up
 
 # View logs
-make docker-logs
+make logs
 
 # Stop services when done
-make docker-down
+make down
+```
+
+### Testing Workflow
+
+```bash
+# Run all tests
+make test
+
+# Run specific test layers
+make test-domain        # Domain entities
+make test-application   # Commands and queries
+make test-unit          # Unit tests only
+
+# Run tests with coverage
+make test-cov
+
+# View coverage report
+open htmlcov/index.html  # macOS
 ```
 
 ### Before Committing
@@ -138,12 +178,30 @@ make clean
 make status
 
 # Rebuild Docker from scratch
-make docker-rebuild
+make rebuild
 
 # Clean everything and start fresh
 make clean-all
 make setup
 ```
+
+## 🔗 Service URLs
+
+When running locally (`make run`):
+
+- App: http://localhost:8000
+- API Docs: http://localhost:8000/api/docs
+
+When running with Docker (`make up`):
+
+- App: http://localhost:8020
+- API Docs: http://localhost:8020/api/docs
+- Keycloak: http://localhost:8021
+- MongoDB: mongodb://localhost:8022
+- MongoDB Express: http://localhost:8023
+- Event Player: http://localhost:8025
+
+Use `make urls` to display all service URLs with configured ports.
 
 ## 🎨 Color-Coded Output
 

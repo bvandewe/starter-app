@@ -81,7 +81,7 @@ class Settings(ApplicationSettings):
 
     # Legacy public client (deprecated)
     keycloak_public_client_id: str = (
-        "portal-web-app"  # Using existing client from realm config
+        "starter-app-public"  # Using existing client from realm config
     )
 
     # Legacy JWT (deprecated - will be removed)

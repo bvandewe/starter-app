@@ -1,12 +1,10 @@
 # Welcome to the Starter App
 
-This project is a template application that demonstrates how to build a modern web application using the **[neuroglia-python](httpshttps://github.com/bvandewe/pyneuro)** framework. It provides a solid foundation for building clean, scalable, and maintainable applications with Python.
+This project is a template application that demonstrates how to build a modern web application using the **[neuroglia-python](https://github.com/bvandewe/pyneuro)** framework. It provides a solid foundation for building clean, scalable, and maintainable applications with Python.
 
-## About Neuroglia-Python
+![Starter App demo](./assets/starter-app_v0.1.0.gif)
 
-**Neuroglia-python** is a framework for building applications based on Domain-Driven Design (DDD) and Command Query Responsibility Segregation (CQRS) principles. It helps you write clean, testable code by providing building blocks for a modular architecture.
-
-- **[Framework Documentation](https://bvandewe.github.io/pyneuro/)**
+**[Online Documentation](https://bvandewe.github.io/starter-app/)**
 
 ## Getting Started
 
@@ -15,7 +13,7 @@ To get started with the application, please refer to the **[Getting Started](get
 ## Key Sections
 
 - **[Architecture](architecture/overview.md)**: Learn about the core concepts of the application's architecture and the `neuroglia-python` framework.
-- **[Authentication](authentication/index.md)**: Understand the dual authentication system, including session-based and JWT bearer token flows.
+- **[Security](security/authentication-flows.md)**: Understand the dual authentication system, including session-based and JWT bearer token flows, plus authorization with OAuth2/OIDC.
 - **[Development](development/makefile-reference.md)**: Find information on the development workflow, including the `Makefile` commands and documentation setup.
 - **[Deployment](deployment/docker-environment.md)**: Learn how to deploy the application using Docker and other related technologies.
 
@@ -32,63 +30,6 @@ graph TD
         D --> E["MongoDB (Persistence)"];
     end
 ```
-
-## 📖 Documentation Structure
-
-### [Authentication](authentication/overview.md)
-
-Authentication and authorization patterns:
-
-- Session management with Redis
-- OAuth2/OIDC with Keycloak
-- JWT token validation
-- Role-based access control (RBAC)
-
-### [Architecture](architecture/cqrs-pattern.md)
-
-Application design and patterns:
-
-- CQRS with Mediator pattern
-- Dependency injection with Neuroglia
-- Controller design patterns
-- Repository pattern implementation
-
-### [Frontend](frontend/build-process.md)
-
-UI development and build process:
-
-- Parcel bundler configuration
-- Nunjucks template system
-- JavaScript module architecture
-- SCSS compilation
-
-### [Infrastructure](infrastructure/docker-environment.md)
-
-Environment setup and deployment:
-
-- Docker Compose stack
-- Service configuration
-- MongoDB setup
-- Redis configuration
-- Observability with OpenTelemetry
-
-### [Development](development/makefile-reference.md)
-
-Developer workflows and tools:
-
-- Makefile command reference
-- Testing strategies
-- Code quality tools
-- Contribution guidelines
-
-### [Troubleshooting](troubleshooting/common-issues.md)
-
-Common problems and solutions:
-
-- Known issues and workarounds
-- Framework bugs and fixes
-- Environment debugging
-- Build troubleshooting
 
 ## 🛠️ Technology Stack
 

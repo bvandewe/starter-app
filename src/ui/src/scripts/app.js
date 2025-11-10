@@ -5,7 +5,7 @@
 
 import { checkAuth } from './api/client.js';
 import { login, logout, showLoginForm, showDashboard } from './ui/auth.js';
-import { loadTasks, handleCreateTask } from './ui/tasks.js';
+import { loadTasks, handleCreateTask, handleUpdateTask } from './ui/tasks.js';
 
 /**
  * Initialize the application
@@ -44,6 +44,12 @@ function setupEventListeners() {
     const submitTaskBtn = document.getElementById('submit-task-btn');
     if (submitTaskBtn) {
         submitTaskBtn.addEventListener('click', handleCreateTask);
+    }
+
+    // Edit task button
+    const submitEditTaskBtn = document.getElementById('submit-edit-task-btn');
+    if (submitEditTaskBtn) {
+        submitEditTaskBtn.addEventListener('click', handleUpdateTask);
     }
 }
 

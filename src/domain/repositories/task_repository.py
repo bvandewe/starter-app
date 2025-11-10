@@ -1,4 +1,5 @@
 """Abstract repository for tasks."""
+
 from abc import ABC, abstractmethod
 
 from domain.entities import Task
@@ -38,6 +39,14 @@ class TaskRepository(ABC):
         pass
 
     @abstractmethod
-    async def delete_async(self, task_id: str) -> bool:
-        """Delete a task by ID."""
+    async def delete_async(self, task_id: str, task: Task | None = None) -> bool:
+        """Delete a task by ID.
+
+        Args:
+            task_id: The ID of the task to delete
+            task: Optional task entity with pending domain events to publish
+
+        Returns:
+            True if deletion was successful, False otherwise
+        """
         pass

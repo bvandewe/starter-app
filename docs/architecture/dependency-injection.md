@@ -497,7 +497,6 @@ services.add_scoped(TaskRepository, MongoTaskRepository)
 ### Wrong Lifetime
 
 **Symptom**: Stale data or connection errors
-
 **Solution**: Choose correct lifetime:
 
 - Singleton for stateless services
@@ -507,5 +506,5 @@ services.add_scoped(TaskRepository, MongoTaskRepository)
 ## Related Documentation
 
 - [CQRS Pattern](./cqrs-pattern.md) - Command/query handlers
-- [Controller Design](./controllers.md) - Controller patterns
-- [Repository Pattern](./repositories.md) - Data access
+- [Data Layer](./data-layer.md) - Repository pattern and domain entities
+- [Architecture Overview](./overview.md) - Core concepts and patterns

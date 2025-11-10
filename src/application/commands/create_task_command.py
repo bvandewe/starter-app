@@ -15,7 +15,6 @@ from neuroglia.mediation import Command, CommandHandler, Mediator
 from neuroglia.observability.tracing import add_span_attributes
 from opentelemetry import trace
 
-from application.events.integration.task_events import TaskCreatedIntegrationEventV1
 from domain.entities import Task
 from domain.enums import TaskPriority, TaskStatus
 from domain.repositories import TaskRepository
@@ -34,7 +33,10 @@ class CreateTaskCommand(Command[OperationResult[TaskCreatedDto]]):
 
     title: str
     description: str
-    priority: TaskPriority = TaskPriority.MEDIUM
+    status: str = "pending"
+    priority: str = "medium"
+    assignee_id: str | None = None
+    department: str | None = None
     user_info: dict | None = None
 
 
@@ -76,26 +78,58 @@ class CreateTaskCommandHandler(
             }
         )
 
+        command.user_info = {} if command.user_info is None else command.user_info
+
         # Create custom span for task creation logic
         with tracer.start_as_current_span("create_task_entity") as span:
+            # Convert string values to enums
+            try:
+                status = TaskStatus(command.status)
+            except ValueError:
+                status = TaskStatus.PENDING
+
+            try:
+                priority = TaskPriority(command.priority)
+            except ValueError:
+                priority = TaskPriority.MEDIUM
+
+            # Determine department: use explicit department if provided, otherwise from user_info
+            department = (
+                command.department
+                if command.department
+                else command.user_info.get("department")
+            )
+
+            # Get user ID from various possible fields in user_info
+            # Keycloak uses 'sub' (subject) as the primary user identifier
+            created_by = (
+                command.user_info.get("sub")
+                or command.user_info.get("user_id")
+                or command.user_info.get("preferred_username")
+                or "unknown"
+            )
+
             # Create new task
+            now = datetime.now(timezone.utc)
             task = Task(
                 title=command.title,
                 description=command.description,
-                priority=command.priority,
-                status=TaskStatus.PENDING,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                priority=priority,
+                status=status,
+                assignee_id=command.assignee_id,
+                department=department,
+                created_at=now,
+                updated_at=now,
+                created_by=created_by,
             )
-
-            # Set creator if user info is provided
-            if command.user_info:
-                task.created_by = command.user_info.get("user_id")
-                task.department = command.user_info.get("department")
-                span.set_attribute("task.created_by", task.created_by or "unknown")
-                span.set_attribute("task.department", task.department or "unknown")
+            span.set_attribute("task.status", status.value)
+            span.set_attribute("task.priority", priority.value)
+            span.set_attribute("task.assignee_id", command.assignee_id or "unassigned")
+            span.set_attribute("task.created_by", created_by)
+            span.set_attribute("task.department", task.state.department or "unknown")
 
         # Save task (repository operations are auto-traced)
+        # This will publish all DomainEvents!
         saved_task = await self.task_repository.add_async(task)
 
         # Record metrics
@@ -103,27 +137,40 @@ class CreateTaskCommandHandler(
         tasks_created.add(
             1,
             {
-                "priority": command.priority,
-                "has_department": bool(
-                    command.user_info and command.user_info.get("department")
-                ),
+                "priority": priority.value,
+                "status": status.value,
+                "has_assignee": bool(command.assignee_id),
+                "has_department": bool(task.state.department),
             },
         )
         task_processing_time.record(
-            processing_time_ms, {"operation": "create", "priority": command.priority}
+            processing_time_ms, {"operation": "create", "priority": priority.value}
         )
 
-        ev = TaskCreatedIntegrationEventV1(
-            aggregate_id=saved_task.id,
-            created_at=saved_task.created_at,
-            title=saved_task.title,
-            description=saved_task.description,
-            status=saved_task.status,
-            priority=saved_task.priority,
-            assignee_id=saved_task.assignee_id,
-            department=saved_task.department,
-        )
-        await self.publish_cloud_event_async(ev)
-        log.debug(f"Published cloud event for task creation: {ev.aggregate_id}")
+        # This is deprecated (was for Entity, not AggregateRoot)
+        # ev = TaskCreatedIntegrationEventV1(
+        #     aggregate_id=saved_task.aggregate_id,
+        #     created_at=saved_task.created_at,
+        #     title=saved_task.title,
+        #     description=saved_task.description,
+        #     status=saved_task.status,
+        #     priority=saved_task.priority,
+        #     assignee_id=saved_task.assignee_id,
+        #     department=saved_task.department,
+        # )
+        # await self.publish_cloud_event_async(ev)
+        # log.debug(f"Published cloud event for task creation: {ev.aggregate_id}")
 
-        return self.ok(self.mapper.map(saved_task, TaskCreatedDto))
+        dto = TaskCreatedDto(
+            id=saved_task.id(),
+            title=saved_task.state.title,
+            description=saved_task.state.description,
+            status=saved_task.state.status,
+            priority=saved_task.state.priority,
+            assignee_id=saved_task.state.assignee_id,
+            department=saved_task.state.department,
+            created_at=saved_task.state.created_at,
+            created_by=saved_task.state.created_by,
+        )
+
+        return self.ok(dto)

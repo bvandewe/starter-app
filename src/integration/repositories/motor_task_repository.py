@@ -4,6 +4,7 @@ MongoDB repository for Task entities using Neuroglia's MotorRepository.
 This extends the framework's MotorRepository to provide Task-specific queries
 while inheriting all standard CRUD operations with automatic domain event publishing.
 """
+
 from typing import TYPE_CHECKING, Optional, cast
 
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -35,23 +36,30 @@ class MongoTaskRepository(TracedRepositoryMixin, MotorRepository[Task, str], Tas
 
     def __init__(
         self,
-        mongo_client: AsyncIOMotorClient,
+        client: AsyncIOMotorClient,
+        database_name: str,
+        collection_name: str,
         serializer: JsonSerializer,
+        entity_type: Optional[type[Task]] = None,
         mediator: Optional["Mediator"] = None,
     ):
         """
         Initialize the Task repository.
 
         Args:
-            mongo_client: Motor async MongoDB client
+            client: Motor async MongoDB client
+            database_name: Name of the MongoDB database
+            collection_name: Name of the collection
             serializer: JSON serializer for entity conversion
+            entity_type: Optional entity type (Task)
             mediator: Optional Mediator for automatic domain event publishing
         """
         super().__init__(
-            client=mongo_client,
-            database_name="starter_app",
-            collection_name="tasks",
+            client=client,
+            database_name=database_name,
+            collection_name=collection_name,
             serializer=serializer,
+            entity_type=entity_type,
             mediator=mediator,
         )
 
@@ -91,9 +99,27 @@ class MongoTaskRepository(TracedRepositoryMixin, MotorRepository[Task, str], Tas
             tasks.append(task)
         return tasks
 
-    async def delete_async(self, task_id: str) -> bool:
-        """Delete a task by ID - custom method for TaskRepository interface."""
+    async def delete_async(self, task_id: str, task: Task | None = None) -> bool:
+        """Delete a task by ID - custom method for TaskRepository interface.
+
+        Args:
+            task_id: The ID of the task to delete
+            task: Optional task entity with pending domain events to publish.
+                  If provided, will publish its domain events before deletion.
+                  If not provided, will retrieve the task first.
+
+        Returns:
+            True if deletion was successful, False otherwise
+        """
         try:
+            # Use provided task or retrieve it
+            entity = task if task else await self.get_async(task_id)
+
+            if entity:
+                # Publish domain events (including TaskDeletedDomainEvent if registered)
+                await self._publish_domain_events(entity)
+
+            # Perform physical deletion
             await self.remove_async(task_id)
             return True
         except Exception:

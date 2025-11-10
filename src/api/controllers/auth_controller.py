@@ -129,7 +129,7 @@ class AuthController(ControllerBase):
 
             # Create server-side session
             session_id = self.session_store.create_session(tokens, user_info)
-            aggregate_id = (
+            aggregate_id = str(
                 user_info.get("sub")
                 or user_info.get("user_id")
                 or user_info.get("preferred_username")

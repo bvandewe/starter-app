@@ -217,5 +217,5 @@ DOCS_DEV_PORT=8002
 ## See Also
 
 - [MkDocs Configuration](https://www.mkdocs.org/user-guide/configuration/)
-- [GitHub Pages Setup](./deployment/github-pages-setup.md)
-- [Makefile Reference](./development/makefile-reference.md)
+- [GitHub Pages Setup](../deployment/github-pages-setup.md)
+- [Makefile Reference](./makefile-reference.md)

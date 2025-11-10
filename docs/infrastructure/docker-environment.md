@@ -434,7 +434,7 @@ For production:
 
 ## Related Documentation
 
-- [Python Environment](./python-environment.md) - Local development setup
-- [Build Process](./build-process.md) - UI build pipeline
-- [MongoDB Setup](./mongodb-setup.md) - Database configuration
-- [Keycloak Configuration](../authentication/keycloak-setup.md) - Identity setup
+- [Getting Started](../getting-started/installation.md) - Setup and installation
+- [Frontend Build Process](../frontend/build-process.md) - UI build pipeline
+- [Makefile Reference](../development/makefile-reference.md) - Docker commands
+- [Authentication Flows](../security/authentication-flows.md) - Keycloak integration

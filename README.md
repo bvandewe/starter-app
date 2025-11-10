@@ -1,5 +1,20 @@
 # Starter App - Neuroglia WebApplication
 
+[![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Poetry](https://img.shields.io/endpoint?url=https://python-poetry.org/badge/v0.json)](https://python-poetry.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg?logo=fastapi)](https://fastapi.tiangolo.com)
+[![Neuroglia](https://img.shields.io/badge/Neuroglia-0.6.6-purple.svg)](https://github.com/neuroglia-io/python-framework)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://bvandewe.github.io/starter-app/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Tests](https://img.shields.io/badge/tests-pytest-orange.svg)](https://docs.pytest.org/)
+[![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen.svg)](htmlcov/index.html)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg?logo=docker)](docker-compose.yml)
+[![Keycloak](https://img.shields.io/badge/auth-Keycloak-orange.svg?logo=keycloak)](https://www.keycloak.org/)
+[![MongoDB](https://img.shields.io/badge/database-MongoDB-green.svg?logo=mongodb)](https://www.mongodb.com/)
+[![Redis](https://img.shields.io/badge/sessions-Redis-red.svg?logo=redis)](https://redis.io/)
+
 An opinionated Neuroglia FastAPI template showcasing multi-subapp architecture (API + UI), CQRS, RBAC, OAuth2/OIDC, and pluggable infrastructure:
 
 - 🎨 **SubApp Pattern**: Clean separation between API and UI concerns
@@ -8,6 +23,8 @@ An opinionated Neuroglia FastAPI template showcasing multi-subapp architecture (
 - 🛡️ **RBAC**: Role-based access control at the application layer
 - 📋 **CQRS Pattern**: Command Query Responsibility Segregation
 - 🎯 **Clean Architecture**: Domain-driven design with clear boundaries
+
+![Starter App demo](./docs/assets/starter-app_v0.1.0.gif)
 
 ## 🏗️ Architecture
 
@@ -196,8 +213,8 @@ See [deployment/keycloak/starter-app-realm-export.json](./deployment/keycloak/st
 Authorization happens in the **application layer** (handlers), not controllers:
 
 - **Admin**: Can view and manage all tasks, can delete tasks
-- **Manager**: Can view tasks in their department (not implemented)
-- **User**: Can only view their assigned tasks (not implemented)
+- **Manager**: Can view tasks in their department
+- **User**: Can only view their assigned tasks
 
 Example RBAC logic in `GetTasksQueryHandler`:
 
@@ -292,7 +309,7 @@ Comprehensive documentation is available in the `docs/` directory and online:
 
 - [**Getting Started**](https://bvandewe.github.io/starter-app/getting-started/installation/) - How to install and run the application.
 - [**Architecture**](https://bvandewe.github.io/starter-app/architecture/overview/) - CQRS pattern, dependency injection, design patterns
-- [**Authentication**](https://bvandewe.github.io/starter-app/authentication/) - Dual auth system (session + JWT), OAuth2/OIDC, RBAC
+- [**Security**](https://bvandewe.github.io/starter-app/security/authentication-flows/) - Dual auth system (session + JWT), OAuth2/OIDC, RBAC
 - [**Development**](https://bvandewe.github.io/starter-app/development/makefile-reference/) - Makefile reference, workflow, testing
 - [**Deployment**](https://bvandewe.github.io/starter-app/deployment/docker-environment/) - Docker environment, deployment, configuration
 - [**Troubleshooting**](https://bvandewe.github.io/starter-app/troubleshooting/common-issues/) - Common issues, known bugs, solutions

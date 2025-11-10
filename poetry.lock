@@ -1566,14 +1566,14 @@ files = [
 
 [[package]]
 name = "neuroglia-python"
-version = "0.6.3"
+version = "0.6.6"
 description = "Port from .NET to Python of the Neuroglia Framework"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "neuroglia_python-0.6.3-py3-none-any.whl", hash = "sha256:7e299a8ed34cb4ea912518b9d9c00f7aea9b14bfd61ac43df7804b845fa4b09a"},
-    {file = "neuroglia_python-0.6.3.tar.gz", hash = "sha256:6367c9f1146235d2caa0a1fc554d0f83c038ac81c7603fb4413a2a79cd4c9988"},
+    {file = "neuroglia_python-0.6.6-py3-none-any.whl", hash = "sha256:316e8ed9561bd19b139a92de17759ef0357c8da09db5b4d9b571d3ca8b4bbf1d"},
+    {file = "neuroglia_python-0.6.6.tar.gz", hash = "sha256:21cd79086b6aeea28ba7bc987384868afb9a0070cf9db23ab8a86f18e7ca6cd4"},
 ]
 
 [package.dependencies]
@@ -2441,6 +2441,26 @@ pygments = ">=2.7.2"
 dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "requests", "setuptools", "xmlschema"]
 
 [[package]]
+name = "pytest-asyncio"
+version = "1.3.0"
+description = "Pytest support for asyncio"
+optional = false
+python-versions = ">=3.10"
+groups = ["dev"]
+files = [
+    {file = "pytest_asyncio-1.3.0-py3-none-any.whl", hash = "sha256:611e26147c7f77640e6d0a92a38ed17c3e9848063698d5c93d5aa7aa11cebff5"},
+    {file = "pytest_asyncio-1.3.0.tar.gz", hash = "sha256:d7f52f36d231b80ee124cd216ffb19369aa168fc10095013c6b014a34d3ee9e5"},
+]
+
+[package.dependencies]
+pytest = ">=8.2,<10"
+typing-extensions = {version = ">=4.12", markers = "python_version < \"3.13\""}
+
+[package.extras]
+docs = ["sphinx (>=5.3)", "sphinx-rtd-theme (>=1)"]
+testing = ["coverage (>=6.2)", "hypothesis (>=5.7.1)"]
+
+[[package]]
 name = "pytest-cov"
 version = "5.0.0"
 description = "Pytest plugin for measuring coverage."
@@ -3082,4 +3102,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "de37a973aead4ac72ed680e2dc99c66be841873bf040f69252937496f6542e11"
+content-hash = "896a49967f66c5117efbdbfcd80c3be6a1031b01d4f5dedc71dfb224a94d082e"

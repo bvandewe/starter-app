@@ -4,25 +4,6 @@
 name: starter-app
 
 services:
-    # 🎨 UI Builder (Parcel Watch Mode)
-    # Automatically rebuilds UI assets on file changes
-    ui-builder:
-        image: node:20-alpine
-        working_dir: /app/src/ui
-        command: npm run watch
-        volumes:
-            - ./:/app
-            - /app/src/ui/node_modules # Anonymous volume for node_modules
-        networks:
-            - starter-app-net
-        environment:
-            NODE_ENV: development
-        entrypoint: >
-            sh -c "
-            npm install &&
-            npm run watch
-            "
-
     # 📱 Starter App Application
     # http://localhost:${APP_PORT:-8020}/
     # http://localhost:8020/
@@ -85,6 +66,40 @@ services:
             - redis
             - ui-builder
 
+    # 🔐 Keycloak (Authentication & Authorization)
+    # http://localhost:${KEYCLOAK_PORT} (admin/admin)
+    # http://localhost:8021
+    # Shared SSO/OAuth2 server for all samples
+    keycloak:
+        image: quay.io/keycloak/keycloak:22.0.5
+        runtime: runc
+        command: ['start-dev', '--import-realm']
+        ports:
+            - '${KEYCLOAK_PORT:-8021}:8080'
+        environment:
+            # Admin credentials
+            KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+            KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+            # Development settings (no external DB, uses H2)
+            KC_HTTP_PORT: 8080
+            KC_HOSTNAME_STRICT: false
+            KC_HOSTNAME_STRICT_HTTPS: false
+            KC_HTTP_ENABLED: true
+            KC_HEALTH_ENABLED: true
+            KC_METRICS_ENABLED: true
+            # Disable HTTPS requirement for admin console (development only!)
+            KC_HOSTNAME_URL: http://localhost:${KEYCLOAK_PORT:-8021}
+            KC_HOSTNAME_ADMIN_URL: http://localhost:${KEYCLOAK_PORT:-8021}
+            KC_PROXY: edge
+        volumes:
+            # Persist H2 database to maintain Keycloak configuration across container restarts
+            # NOTE: Master realm SSL setting (sslRequired=none) is persisted in this volume
+            - keycloak_data:/opt/keycloak/data
+            # Import realm configurations on first startup
+            - ./deployment/keycloak/starter-app-realm-export.json:/opt/keycloak/data/import/starter-app-realm-export.json:ro
+        networks:
+            - starter-app-net
+
     # 🗄️ MongoDB Database
     # mongodb://localhost:${MONGODB_PORT}
     # Shared database server for all samples
@@ -126,69 +141,17 @@ services:
         depends_on:
             - mongodb
 
-    # 🔐 Keycloak (Authentication & Authorization)
-    # http://localhost:${KEYCLOAK_PORT} (admin/admin)
-    # Shared SSO/OAuth2 server for all samples
-    keycloak:
-        image: quay.io/keycloak/keycloak:22.0.5
-        runtime: runc
-        command: ['start-dev', '--import-realm']
-        ports:
-            - '${KEYCLOAK_PORT:-8021}:8080'
-        environment:
-            # Admin credentials
-            KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USERNAME:-admin}
-            KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-            # Development settings (no external DB, uses H2)
-            KC_HTTP_PORT: 8080
-            KC_HOSTNAME_STRICT: false
-            KC_HOSTNAME_STRICT_HTTPS: false
-            KC_HTTP_ENABLED: true
-            KC_HEALTH_ENABLED: true
-            KC_METRICS_ENABLED: true
-            # Disable HTTPS requirement for admin console (development only!)
-            KC_HOSTNAME_URL: http://localhost:${KEYCLOAK_PORT:-8021}
-            KC_HOSTNAME_ADMIN_URL: http://localhost:${KEYCLOAK_PORT:-8021}
-            KC_PROXY: edge
-        volumes:
-            # Persist H2 database to maintain Keycloak configuration across container restarts
-            # NOTE: Master realm SSL setting (sslRequired=none) is persisted in this volume
-            - keycloak_data:/opt/keycloak/data
-            # Import realm configurations on first startup
-            - ./deployment/keycloak/starter-app-realm-export.json:/opt/keycloak/data/import/starter-app-realm-export.json:ro
-        networks:
-            - starter-app-net
-
-    # 🔴 Redis (Session Store)
-    # redis://localhost:${REDIS_PORT}
-    # Distributed session storage for horizontal scaling
-    redis:
-        image: redis:7.4-alpine
-        restart: always
-        ports:
-            - '${REDIS_PORT:-6379}:6379'
-        command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-        volumes:
-            - redis_data:/data
-        networks:
-            - starter-app-net
-        healthcheck:
-            test: ['CMD', 'redis-cli', 'ping']
-            interval: 10s
-            timeout: 3s
-            retries: 3
-
     # 🎬 Event Player (Event Visualization & Replay)
     # http://localhost:${EVENT_PLAYER_PORT}
     # http://localhost:8024
     # Shared event visualization and replay service for all samples
     event-player:
-        image: ghcr.io/bvandewe/events-player:v0.4.10
+        image: ghcr.io/bvandewe/events-player:v0.4.11
         runtime: runc
         ports:
             - '${EVENT_PLAYER_PORT:-8024}:8080'
         environment:
-            tag: 'v0.4.10'
+            tag: 'v0.4.11'
             log_level: INFO
 
             # Authentication & Authorization
@@ -230,6 +193,25 @@ services:
         depends_on:
             - keycloak
 
+    # 🔴 Redis (Session Store)
+    # redis://localhost:${REDIS_PORT}
+    # Distributed session storage for horizontal scaling
+    redis:
+        image: redis:7.4-alpine
+        restart: always
+        ports:
+            - '${REDIS_PORT:-6379}:6379'
+        command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+        volumes:
+            - redis_data:/data
+        networks:
+            - starter-app-net
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 10s
+            timeout: 3s
+            retries: 3
+
     # 🔭 OpenTelemetry Collector (All-in-One)
     # Receives, processes, and exports telemetry data (traces, metrics, logs)
     # Ports: ${OTEL_COLLECTOR_GRPC_PORT} (OTLP gRPC), ${OTEL_COLLECTOR_HTTP_PORT} (OTLP HTTP)
@@ -246,6 +228,25 @@ services:
             - ./deployment/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
         networks:
             - starter-app-net
+
+    # 🎨 UI Builder (Parcel Watch Mode)
+    # Automatically rebuilds UI assets on file changes
+    ui-builder:
+        image: node:20-alpine
+        working_dir: /app/src/ui
+        command: npm run watch
+        volumes:
+            - ./:/app
+            - /app/src/ui/node_modules # Anonymous volume for node_modules
+        networks:
+            - starter-app-net
+        environment:
+            NODE_ENV: development
+        entrypoint: >
+            sh -c "
+            npm install &&
+            npm run watch
+            "
 
 networks:
     starter-app-net:

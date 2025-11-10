@@ -501,9 +501,9 @@ docker compose up -d
 
 ### Check Documentation
 
-- [Architecture Docs](../architecture/) - Design patterns
-- [Infrastructure Docs](../infrastructure/) - Environment setup
-- [Frontend Docs](../frontend/) - UI build process
+- [Architecture Overview](../architecture/overview.md) - Design patterns
+- [Docker Environment](../deployment/docker-environment.md) - Environment setup
+- [Frontend Build Process](../frontend/build-process.md) - UI build process
 
 ### Logs and Diagnostics
 
@@ -533,4 +533,5 @@ If you find a new bug:
 
 - [Neuroglia MongoDB Bug](./neuroglia-mongo-import.md) - Detailed bug report
 - [Docker Environment](../infrastructure/docker-environment.md) - Service setup
-- [Development Workflow](../development/workflow.md) - Daily development guide
+- [Makefile Reference](../development/makefile-reference.md) - Command reference
+- [Getting Started](../getting-started/running-the-app.md) - Running the application

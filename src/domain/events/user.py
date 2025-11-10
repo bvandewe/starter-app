@@ -20,8 +20,11 @@ class UserLoggedInDomainEvent(DomainEvent):
     def __init__(self, aggregate_id: str, username: str, login_at: datetime):
         super().__init__(aggregate_id)
         self.username = username
-        self.login_at = login_at
+        # Convert datetime to ISO8601 string for CloudEvent compatibility
+        self.login_at = (
+            login_at.isoformat() if isinstance(login_at, datetime) else login_at
+        )
 
     aggregate_id: str
     username: str
-    login_at: datetime
+    login_at: str  # Changed to str to ensure CloudEvent compatibility

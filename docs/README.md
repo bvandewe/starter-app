@@ -4,16 +4,16 @@ This directory contains comprehensive documentation for the Starter App, organiz
 
 ## 📚 Documentation Structure
 
-### [Authentication](./authentication/)
+### [Security](./security/)
 
-Authentication and authorization system documentation:
+Security, authentication and authorization system documentation:
 
-- **[Overview](./authentication/overview.md)** - Dual authentication architecture (session cookies + JWT)
-- **[Session Management](./authentication/session-management.md)** - Redis session store implementation
-- **OAuth2/OIDC Integration** - Keycloak setup and configuration
-- **RBAC** - Role-based access control patterns
+- **[Authentication Flows](./security/authentication-flows.md)** - Dual authentication architecture (session cookies + JWT)
+- **[Authorization](./security/authorization.md)** - OAuth2/OIDC concepts and RBAC implementation
+- **[Session Management](./security/session-management.md)** - Redis session store implementation
+- **Keycloak Integration** - OAuth2/OIDC setup and configuration
 
-**Start Here**: If implementing authentication or troubleshooting auth issues
+**Start Here**: If implementing authentication/authorization or troubleshooting security issues
 
 ### [Architecture](./architecture/)
 
@@ -81,7 +81,7 @@ Development workflows and guides:
 
 1. [CQRS Pattern](./architecture/cqrs-pattern.md) - Create commands/queries
 2. [Dependency Injection](./architecture/dependency-injection.md) - Wire up dependencies
-3. [Authentication](./authentication/overview.md) - Protect endpoints
+3. [Security](./security/authentication-flows.md) - Protect endpoints
 4. [Frontend Build](./frontend/build-process.md) - Add UI
 
 ### Debugging Issues
@@ -125,8 +125,8 @@ All documentation follows these principles:
 - **FastAPI/Controllers** → `architecture/`
 - **Commands/Queries** → `architecture/cqrs-pattern.md`
 - **MongoDB** → `architecture/dependency-injection.md`
-- **Redis/Sessions** → `authentication/session-management.md`
-- **Keycloak** → `authentication/`
+- **Redis/Sessions** → `security/session-management.md`
+- **Keycloak** → `security/`
 - **Docker** → `infrastructure/docker-environment.md`
 - **Parcel/Build** → `frontend/build-process.md`
 

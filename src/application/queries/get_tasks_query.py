@@ -13,7 +13,7 @@ from domain.repositories import TaskRepository
 class GetTasksQuery(Query[OperationResult[list[Any]]]):
     """Query to retrieve tasks with role-based filtering."""
 
-    user_info: dict
+    user_info: dict[str, Any]
 
 
 class GetTasksQueryHandler(QueryHandler[GetTasksQuery, OperationResult[list[Any]]]):
@@ -23,8 +23,9 @@ class GetTasksQueryHandler(QueryHandler[GetTasksQuery, OperationResult[list[Any]
         super().__init__()
         self.task_repository = task_repository
 
-    async def handle_async(self, query: GetTasksQuery) -> OperationResult[list[Any]]:
+    async def handle_async(self, request: GetTasksQuery) -> OperationResult[list[Any]]:
         """Handle get tasks query with RBAC logic."""
+        query = request
         user_roles = query.user_info.get("roles", [])
 
         # RBAC Logic: Filter tasks based on user role
@@ -52,15 +53,17 @@ class GetTasksQueryHandler(QueryHandler[GetTasksQuery, OperationResult[list[Any]
         # Convert to DTOs
         task_dtos = [
             {
-                "id": str(task.id),
-                "title": task.title,
-                "description": task.description,
-                "status": task.status,
-                "priority": task.priority,
-                "assignee_id": str(task.assignee_id) if task.assignee_id else None,
-                "department": task.department,
-                "created_at": task.created_at.isoformat(),
-                "updated_at": task.updated_at.isoformat(),
+                "id": task.id(),
+                "title": task.state.title,
+                "description": task.state.description,
+                "status": task.state.status,
+                "priority": task.state.priority,
+                "assignee_id": (
+                    str(task.state.assignee_id) if task.state.assignee_id else None
+                ),
+                "department": task.state.department,
+                "created_at": task.state.created_at.isoformat(),
+                "updated_at": task.state.updated_at.isoformat(),
             }
             for task in tasks
         ]

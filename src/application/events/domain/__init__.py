@@ -1,3 +1,5 @@
-from .user_auth_events_handler import UserLoggedInDomainEvent
+from .user_auth_events_handler import UserLoggedInDomainEventHandler
 
-__all__ = ["UserLoggedInDomainEvent"]
+__all__ = [
+    "UserLoggedInDomainEventHandler",
+]

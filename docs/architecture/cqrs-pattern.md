@@ -426,5 +426,5 @@ class CreateTaskCommandHandler(CommandHandler[CreateTaskCommand, OperationResult
 ## Related Documentation
 
 - [Dependency Injection](./dependency-injection.md) - DI patterns
-- [Repository Pattern](./repositories.md) - Data access layer
-- [Controller Design](./controllers.md) - API layer design
+- [Data Layer](./data-layer.md) - Repository pattern and domain entities
+- [Architecture Overview](./overview.md) - Core concepts and patterns
