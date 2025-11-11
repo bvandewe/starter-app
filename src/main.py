@@ -2,9 +2,8 @@
 
 import logging
 from pathlib import Path
-from typing import Awaitable, Callable
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from neuroglia.data.infrastructure.mongo import MotorRepository
 from neuroglia.eventing.cloud_events.infrastructure.cloud_event_ingestor import (
@@ -21,7 +20,6 @@ from neuroglia.mapping import Mapper
 from neuroglia.mediation import Mediator
 from neuroglia.observability import Observability
 from neuroglia.serialization.json import JsonSerializer
-from starlette.responses import Response
 
 from api.services import DualAuthService
 from api.services.openapi_config import (
@@ -32,45 +30,10 @@ from application.services import configure_logging
 from application.settings import app_settings
 from domain.entities import Task
 from domain.repositories import TaskRepository
-from infrastructure import InMemorySessionStore, RedisSessionStore, SessionStore
 from integration.repositories.motor_task_repository import MongoTaskRepository
 
 configure_logging(log_level=app_settings.log_level)
 log = logging.getLogger(__name__)
-
-
-def create_session_store() -> SessionStore:
-    """Factory function to create SessionStore based on configuration.
-
-    Returns:
-        InMemorySessionStore for development (sessions lost on restart)
-        RedisSessionStore for production (distributed, persistent sessions)
-    """
-    if app_settings.redis_enabled:
-        log.info(f"🔴 Using RedisSessionStore (url={app_settings.redis_url})")
-        try:
-            store = RedisSessionStore(
-                redis_url=app_settings.redis_url,
-                session_timeout_hours=app_settings.session_timeout_hours,
-                key_prefix=app_settings.redis_key_prefix,
-            )
-            # Test connection
-            if store.ping():
-                log.info("✅ Redis connection successful")
-            else:
-                log.warning("⚠️ Redis ping failed - sessions may not persist")
-            return store
-        except Exception as e:
-            log.error(f"❌ Failed to connect to Redis: {e}")
-            log.warning("⚠️ Falling back to InMemorySessionStore")
-            return InMemorySessionStore(
-                session_timeout_hours=app_settings.session_timeout_hours
-            )
-    else:
-        log.info("💾 Using InMemorySessionStore (development only)")
-        return InMemorySessionStore(
-            session_timeout_hours=app_settings.session_timeout_hours
-        )
 
 
 def create_app() -> FastAPI:
@@ -129,20 +92,8 @@ def create_app() -> FastAPI:
         implementation_type=MongoTaskRepository,
     )
 
-    # Register infrastructure services - use factory to create appropriate session store
-    session_store = create_session_store()
-    builder.services.add_singleton(SessionStore, singleton=session_store)
-
-    # Register API services
-    # Create AuthService instance (will be shared by both DI and middleware)
-    auth_service_instance = DualAuthService(session_store)
-    # Pre-warm JWKS cache (ignore failure silently; will retry on first token usage)
-    try:
-        auth_service_instance._fetch_jwks()
-        log.info("🔐 JWKS cache pre-warmed")
-    except Exception as e:
-        log.debug(f"JWKS pre-warm skipped: {e}")
-    builder.services.add_singleton(DualAuthService, singleton=auth_service_instance)
+    # Configure authentication services (session store + auth service)
+    DualAuthService.configure(builder)
 
     # Add SubApp for API with controllers
     builder.add_sub_app(
@@ -187,23 +138,8 @@ def create_app() -> FastAPI:
     # Configure OpenAPI path prefixes for all mounted sub-apps
     configure_mounted_apps_openapi_prefix(app)
 
-    # Add middleware to inject AuthService into request state for FastAPI dependencies
-    # Use the same instance that's registered in the DI container
-    @app.middleware("http")
-    async def inject_auth_service(
-        request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
-        """Middleware to inject AuthService into FastAPI request state.
-
-        This middleware injects the AuthService instance into request state
-        so FastAPI dependencies can access it. We use the same instance that's
-        registered in Neuroglia's DI container for consistency.
-        """
-        # Use the auth_service_instance from module scope (same one in DI container)
-        request.state.auth_service = auth_service_instance
-        response = await call_next(request)
-        return response
-
+    # Configure middlewares
+    DualAuthService.configure_middleware(app)
     app.add_middleware(CloudEventMiddleware, service_provider=app.state.services)
 
     if app_settings.enable_cors:

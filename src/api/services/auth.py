@@ -9,14 +9,19 @@ Enhancements:
 import json
 import logging
 import time
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Optional
 
 import httpx
 import jwt
 from jwt import PyJWTError, algorithms
+from starlette.responses import Response
 
 from application.settings import app_settings
-from infrastructure import SessionStore
+from infrastructure import InMemorySessionStore, RedisSessionStore, SessionStore
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI, Request
+    from neuroglia.hosting.web import WebApplicationBuilder
 
 
 class DualAuthService:
@@ -290,3 +295,87 @@ class DualAuthService:
         """
         user_roles = user.get("roles", [])
         return any(role in user_roles for role in required_roles)
+
+    @staticmethod
+    def configure(builder: "WebApplicationBuilder") -> None:
+        """Configure authentication services in the application builder.
+
+        This method:
+        1. Creates and registers the appropriate SessionStore (Redis or in-memory)
+        2. Creates a DualAuthService instance with the session store
+        3. Pre-warms the JWKS cache for faster first request
+        4. Registers both services in the DI container
+
+        Args:
+            builder: WebApplicationBuilder instance for service registration
+        """
+        log = logging.getLogger(__name__)
+
+        # Create session store based on configuration
+        session_store: SessionStore
+        if app_settings.redis_enabled:
+            log.info(f"🔴 Using RedisSessionStore (url={app_settings.redis_url})")
+            try:
+                session_store = RedisSessionStore(
+                    redis_url=app_settings.redis_url,
+                    session_timeout_hours=app_settings.session_timeout_hours,
+                    key_prefix=app_settings.redis_key_prefix,
+                )
+                # Test connection
+                if session_store.ping():
+                    log.info("✅ Redis connection successful")
+                else:
+                    log.warning("⚠️ Redis ping failed - sessions may not persist")
+            except Exception as e:
+                log.error(f"❌ Failed to connect to Redis: {e}")
+                log.warning("⚠️ Falling back to InMemorySessionStore")
+                session_store = InMemorySessionStore(
+                    session_timeout_hours=app_settings.session_timeout_hours
+                )
+        else:
+            log.info("💾 Using InMemorySessionStore (development only)")
+            session_store = InMemorySessionStore(
+                session_timeout_hours=app_settings.session_timeout_hours
+            )
+
+        # Register session store
+        builder.services.add_singleton(SessionStore, singleton=session_store)
+
+        # Create and configure auth service
+        auth_service = DualAuthService(session_store)
+
+        # Pre-warm JWKS cache (ignore failure silently; will retry on first token usage)
+        try:
+            auth_service._fetch_jwks()
+            log.info("🔐 JWKS cache pre-warmed")
+        except Exception as e:
+            log.debug(f"JWKS pre-warm skipped: {e}")
+
+        # Register auth service
+        builder.services.add_singleton(DualAuthService, singleton=auth_service)
+
+    @staticmethod
+    def configure_middleware(app: "FastAPI") -> None:
+        """Configure authentication middleware for the FastAPI application.
+
+        This middleware injects the DualAuthService instance from the DI container
+        into the request state, making it available to FastAPI dependencies.
+
+        Args:
+            app: FastAPI application instance
+        """
+
+        @app.middleware("http")
+        async def inject_auth_service(
+            request: "Request", call_next: Callable[["Request"], Awaitable[Response]]
+        ) -> Response:
+            """Middleware to inject AuthService into FastAPI request state.
+
+            This middleware injects the AuthService instance into request state
+            so FastAPI dependencies can access it. We retrieve the same instance
+            that's registered in Neuroglia's DI container for consistency.
+            """
+            # Retrieve auth service from DI container
+            request.state.auth_service = app.state.services.get(DualAuthService)
+            response = await call_next(request)
+            return response
