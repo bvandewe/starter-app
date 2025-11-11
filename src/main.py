@@ -22,10 +22,12 @@ from neuroglia.mediation import Mediator
 from neuroglia.observability import Observability
 from neuroglia.serialization.json import JsonSerializer
 from starlette.responses import Response
-from starlette.routing import Mount
 
 from api.services import DualAuthService
-from api.services.openapi_config import configure_api_openapi
+from api.services.openapi_config import (
+    configure_api_openapi,
+    configure_mounted_apps_openapi_prefix,
+)
 from application.services import configure_logging
 from application.settings import app_settings
 from domain.entities import Task
@@ -182,18 +184,8 @@ def create_app() -> FastAPI:
         debug=True,
     )
 
-    # Annotate mounted sub-apps with their mount path so Swagger can render full URLs
-    for route in app.routes:
-        if isinstance(route, Mount) and hasattr(route, "app") and route.app is not None:
-            mount_path = route.path or ""
-            # Normalize to leading slash, but treat root mount as empty prefix
-            if mount_path and not mount_path.startswith("/"):
-                mount_path = f"/{mount_path}"
-            normalized_prefix = (
-                mount_path.rstrip("/") if mount_path not in ("", "/") else ""
-            )
-            log.debug(f"Mounted sub-app '{route}' at '{normalized_prefix}'")
-            route.app.state.openapi_path_prefix = normalized_prefix  # type: ignore[attr-defined]
+    # Configure OpenAPI path prefixes for all mounted sub-apps
+    configure_mounted_apps_openapi_prefix(app)
 
     # Add middleware to inject AuthService into request state for FastAPI dependencies
     # Use the same instance that's registered in the DI container

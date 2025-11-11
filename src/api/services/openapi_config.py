@@ -1,13 +1,40 @@
 """OpenAPI/Swagger configuration service for API documentation."""
 
+import logging
 from typing import Any, Iterable, cast
 
 from fastapi import FastAPI
 from fastapi.dependencies.models import Dependant, SecurityRequirement
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import APIRoute
+from starlette.routing import Mount
 
 from application.settings import Settings
+
+log = logging.getLogger(__name__)
+
+
+def configure_mounted_apps_openapi_prefix(app: FastAPI) -> None:
+    """Annotate mounted sub-apps with their mount path for OpenAPI path rendering.
+
+    This function iterates over all mounted sub-apps in the root application and
+    sets the `openapi_path_prefix` attribute on each sub-app's state. This prefix
+    is used by the OpenAPI schema generation to render full URLs in Swagger UI.
+
+    Args:
+        app: Root FastAPI application with mounted sub-apps
+    """
+    for route in app.routes:
+        if isinstance(route, Mount) and hasattr(route, "app") and route.app is not None:
+            mount_path = route.path or ""
+            # Normalize to leading slash, but treat root mount as empty prefix
+            if mount_path and not mount_path.startswith("/"):
+                mount_path = f"/{mount_path}"
+            normalized_prefix = (
+                mount_path.rstrip("/") if mount_path not in ("", "/") else ""
+            )
+            log.debug(f"Mounted sub-app '{route}' at '{normalized_prefix}'")
+            route.app.state.openapi_path_prefix = normalized_prefix  # type: ignore[attr-defined]
 
 
 def _resolve_mount_prefix(app: FastAPI) -> str:
