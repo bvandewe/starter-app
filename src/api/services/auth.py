@@ -376,6 +376,8 @@ class DualAuthService:
             that's registered in Neuroglia's DI container for consistency.
             """
             # Retrieve auth service from DI container
-            request.state.auth_service = app.state.services.get(DualAuthService)
+            request.state.auth_service = app.state.services.get_required_service(
+                DualAuthService
+            )
             response = await call_next(request)
             return response
