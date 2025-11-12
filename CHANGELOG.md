@@ -6,6 +6,23 @@ The format follows the recommendations of Keep a Changelog (https://keepachangel
 
 ## [Unreleased]
 
+### Changed
+
+#### Backend
+
+- Refactored authentication middleware configuration by moving detailed setup code from `main.py` to `DualAuthService.configure_middleware()` helper method for better separation of concerns and maintainability.
+- Updated import statements formatting for improved code readability (multi-line imports consolidated).
+
+#### Dependencies
+
+- Updated `neuroglia-python` from 0.6.6 to 0.6.7.
+
+### Fixed
+
+- Fixed dependency injection for authentication middleware to properly resolve service provider.
+- Fixed configuration issues in CI workflow for Git LFS checkout to ensure GitHub Pages deployment includes LFS assets.
+- Fixed Bandit security scanner configuration to skip test directories and B101 (assert_used) check, eliminating 155 false positive warnings.
+
 ---
 
 ## [0.1.0] - 2025-11-11
