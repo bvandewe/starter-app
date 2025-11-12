@@ -1566,14 +1566,14 @@ files = [
 
 [[package]]
 name = "neuroglia-python"
-version = "0.6.6"
+version = "0.6.7"
 description = "Port from .NET to Python of the Neuroglia Framework"
 optional = false
 python-versions = "<4.0,>=3.9"
 groups = ["main"]
 files = [
-    {file = "neuroglia_python-0.6.6-py3-none-any.whl", hash = "sha256:316e8ed9561bd19b139a92de17759ef0357c8da09db5b4d9b571d3ca8b4bbf1d"},
-    {file = "neuroglia_python-0.6.6.tar.gz", hash = "sha256:21cd79086b6aeea28ba7bc987384868afb9a0070cf9db23ab8a86f18e7ca6cd4"},
+    {file = "neuroglia_python-0.6.7-py3-none-any.whl", hash = "sha256:eaff84aeaa554d42370a875cf4ddbf6d05ee1fa392df3d9681de1d31d8be427e"},
+    {file = "neuroglia_python-0.6.7.tar.gz", hash = "sha256:ab560c88e3f8e4c17040568d7f13454d4b5ed08ef68600b81db5fd018526624b"},
 ]
 
 [package.dependencies]
@@ -3102,4 +3102,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "896a49967f66c5117efbdbfcd80c3be6a1031b01d4f5dedc71dfb224a94d082e"
+content-hash = "3259728a4e5b4dabb639493806d641676a51e9d4ab2cfe60857ec61cbde9c0ae"
