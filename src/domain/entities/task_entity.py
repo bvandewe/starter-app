@@ -1,4 +1,6 @@
-"""Task entity for the domain layer.
+"""!!!! UNUSED - SAMPLE ONLY !!!!
+
+Task entity for the domain layer.
 
 This is a sample implementation with a simple Entity instead of the full
 AggregateRoot with AggregateState and DomainEvents.
